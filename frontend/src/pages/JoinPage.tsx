@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input, Button, Toast } from 'antd-mobile';
 import { joinGame } from '../api/game';
@@ -13,11 +13,13 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(false);
 
   // 从 URL 参数获取 gameCode（扫码进入时）
-  const urlParams = new URLSearchParams(window.location.search);
-  const codeFromUrl = urlParams.get('code');
-  if (codeFromUrl && !gameCode) {
-    setGameCode(codeFromUrl);
-  }
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    if (codeFromUrl) {
+      setGameCode(codeFromUrl);
+    }
+  }, []);
 
   const handleJoin = async () => {
     if (!gameCode.trim()) {
@@ -43,6 +45,7 @@ export default function JoinPage() {
       localStorage.setItem('playerId', result.player.id);
       localStorage.setItem('nickname', nickname.trim());
       localStorage.setItem('gameCode', gameCode.trim());
+      localStorage.setItem('isHost', 'false');
 
       // 跳转到大厅
       navigate(`/lobby/${result.gameId}`);
@@ -98,6 +101,17 @@ export default function JoinPage() {
           >
             加入游戏
           </Button>
+
+          <div className="text-center mt-4">
+            <Button
+              fill="outline"
+              shape="rounded"
+              onClick={() => navigate('/create')}
+              size="small"
+            >
+              🎮 或者创建游戏
+            </Button>
+          </div>
         </div>
 
         {/* 规则简介 */}

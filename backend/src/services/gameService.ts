@@ -105,8 +105,9 @@ export async function endGame(gameId: string, playerId: string) {
     data: { votedEnd: true },
   });
 
-  // 统计投票数
-  const votedCount = game.players.filter((p) => p.id === playerId ? true : p.votedEnd).length + 1; // +1 因为刚投的还没查到
+  // 统计投票数（当前玩家已在上方更新为 votedEnd=true，但 game 对象是更新前查的，
+  // 所以 filter 里对当前玩家直接算 true，对其他玩家看 votedEnd 字段）
+  const votedCount = game.players.filter((p) => p.id === playerId ? true : p.votedEnd).length;
   const majority = Math.ceil(game.players.length / 2);
 
   let allVoted = false;

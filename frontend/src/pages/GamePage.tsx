@@ -33,6 +33,9 @@ export default function GamePage() {
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const [currentMessage, setCurrentMessage] = useState<PendingMessage | null>(null);
 
+  // 消息列表弹窗：点击邮箱先展示所有待处理消息
+  const [showMessageListPopup, setShowMessageListPopup] = useState(false);
+
   // 质疑命中选任务弹窗
   const [showHitTaskPopup, setShowHitTaskPopup] = useState(false);
   const [hitChallengeId, setHitChallengeId] = useState('');
@@ -282,7 +285,7 @@ export default function GamePage() {
             <h1 className="text-lg font-bold text-gray-800">🎭 游戏进行中</h1>
             <div className="flex items-center gap-2">
               <Badge content={messages.length > 0 ? messages.length : undefined}>
-                <Button size="small" onClick={() => { if (messages.length > 0) handleOpenMessage(messages[0]); }}>
+                <Button size="small" onClick={() => { if (messages.length > 0) setShowMessageListPopup(true); }}>
                   📬 消息
                 </Button>
               </Badge>
@@ -509,6 +512,49 @@ export default function GamePage() {
           <Button color="warning" block shape="rounded" onClick={handleChallenge}>
             发起质疑
           </Button>
+        </div>
+      </Popup>
+
+      {/* ========== 弹窗：消息列表 ========== */}
+      <Popup
+        visible={showMessageListPopup}
+        onMaskClick={() => setShowMessageListPopup(false)}
+        position="bottom"
+        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+      >
+        <div className="p-6">
+          <h3 className="text-base font-bold text-gray-800 mb-4">📬 待处理消息 ({messages.length})</h3>
+          {messages.length === 0 ? (
+            <div className="text-sm text-gray-400 text-center py-4">暂无待处理消息</div>
+          ) : (
+            <div className="space-y-2 mb-4 max-h-[50vh] overflow-y-auto">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 cursor-pointer hover:bg-purple-50 transition-colors"
+                  onClick={() => {
+                    setShowMessageListPopup(false);
+                    handleOpenMessage(msg);
+                  }}
+                >
+                  <span className="text-lg">{msg.type === 'DECLARE_COMPLETE' ? '📋' : '🛡️'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-700">
+                      {msg.type === 'DECLARE_COMPLETE' ? '声明完成确认' : '质疑确认'}
+                    </div>
+                    <div className="text-xs text-gray-400 truncate">
+                      {msg.type === 'DECLARE_COMPLETE'
+                        ? `${(msg.content as DeclareCompleteType).declarerNickname} 声明完成任务`
+                        : `${(msg.content as ChallengeType).challengerNickname} 质疑你`}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(msg.createdAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Popup>
 

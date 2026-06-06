@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { List, Toast } from 'antd-mobile';
-import { getGame } from '../api/game';
+import { List, Button, Toast, Dialog } from 'antd-mobile';
+import { getGame, startGame } from '../api/game';
 import type { GameInfo } from '../types/game';
 
 /**
- * 大厅页 — 等待玩家到齐 → 游戏开始
+ * 大厅页 — 等待玩家到齐 → 房主开始游戏
  */
 export default function LobbyPage() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const [game, setGame] = useState<GameInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
+
+  const isHost = localStorage.getItem('isHost') === 'true';
 
   // 轮询游戏状态
   useEffect(() => {
@@ -46,6 +49,28 @@ export default function LobbyPage() {
   if (!game) {
     return <div className="flex items-center justify-center min-h-screen text-gray-400">游戏不存在</div>;
   }
+
+  const handleStartGame = async () => {
+    if (game.players.length < 4) {
+      Toast.show({ icon: 'fail', content: '至少需要4名玩家才能开始' });
+      return;
+    }
+    const result = await Dialog.confirm({
+      title: '确认开始游戏？',
+      content: `当前 ${game.players.length}/${game.playerCount} 人已加入`,
+    });
+    if (!result) return;
+
+    setStarting(true);
+    try {
+      await startGame(gameId!);
+      Toast.show({ icon: 'success', content: '游戏开始！' });
+    } catch (err: any) {
+      Toast.show({ icon: 'fail', content: err?.response?.data?.message || '开始失败' });
+    } finally {
+      setStarting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -107,6 +132,25 @@ export default function LobbyPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 房主操作 */}
+        {isHost && game.status === 'WAITING' && (
+          <div className="mt-4">
+            <Button
+              color="primary"
+              block
+              shape="rounded"
+              size="large"
+              loading={starting}
+              onClick={handleStartGame}
+            >
+              🚀 开始游戏
+            </Button>
+            <p className="text-center text-xs text-gray-400 mt-2">
+              至少需要4人才能开始 · 当前 {game.players.length} 人
+            </p>
           </div>
         )}
 
