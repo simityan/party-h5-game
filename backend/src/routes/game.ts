@@ -7,6 +7,16 @@ const router = Router();
 
 // POST /api/game — 创建游戏
 router.post('/', async (req: Request, res: Response) => {
+  const { playerCount, endTime } = req.body;
+  if (!playerCount || typeof playerCount !== 'number' || playerCount < 4 || playerCount > 8) {
+    throw new AppError(400, 'playerCount 必须为 4-8 的整数');
+  }
+  if (!endTime || isNaN(Date.parse(endTime))) {
+    throw new AppError(400, 'endTime 必须为有效的 ISO 日期');
+  }
+  if (new Date(endTime).getTime() <= Date.now()) {
+    throw new AppError(400, 'endTime 必须在未来');
+  }
   const result = await gameService.createGame(req.body);
   res.json(result);
 });

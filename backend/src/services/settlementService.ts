@@ -233,7 +233,7 @@ function computeAbilityChart(
     dramaBone: normalize(allDramaBone[idx] * 100, allDramaBone.map((v) => v * 100)),
     magnetism: normalize(allMagnetism[idx], allMagnetism),
     ironSkin: normalize(allIronSkin[idx] * 100, allIronSkin.map((v) => v * 100)),
-    luck: Math.max(10, Math.min(100, allLuck[idx])),
+    luck: normalize(allLuck[idx], allLuck),
   };
 
   return {

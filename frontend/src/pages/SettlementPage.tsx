@@ -322,13 +322,25 @@ export default function SettlementPage() {
             <div className="mt-6 space-y-3">
               <button
                 className="w-full py-3 rounded-full bg-purple-600 text-white font-medium text-base shadow-lg active:bg-purple-700 transition-colors"
-                onClick={() => navigate('/create')}
+                onClick={() => {
+                  localStorage.removeItem('playerId');
+                  localStorage.removeItem('nickname');
+                  localStorage.removeItem('gameCode');
+                  localStorage.removeItem('isHost');
+                  navigate('/create');
+                }}
               >
                 🎮 再来一局
               </button>
               <button
                 className="w-full py-3 rounded-full bg-white text-purple-600 font-medium text-base border border-purple-200 shadow-sm active:bg-purple-50 transition-colors"
-                onClick={() => navigate('/join')}
+                onClick={() => {
+                  localStorage.removeItem('playerId');
+                  localStorage.removeItem('nickname');
+                  localStorage.removeItem('gameCode');
+                  localStorage.removeItem('isHost');
+                  navigate('/join');
+                }}
               >
                 🔗 加入其他游戏
               </button>

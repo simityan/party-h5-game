@@ -13,6 +13,17 @@ export default function GamePage() {
   const navigate = useNavigate();
   const playerId = localStorage.getItem('playerId') || '';
 
+  // playerId 缺失 → 跳转加入页（防止 API 调用空 ID）
+  useEffect(() => {
+    if (!playerId) {
+      navigate('/join', { replace: true });
+    }
+  }, [playerId, navigate]);
+
+  if (!playerId) {
+    return null;
+  }
+
   // 状态
   const [game, setGame] = useState<GameInfo | null>(null);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
