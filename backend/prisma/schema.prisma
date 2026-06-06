@@ -1,0 +1,311 @@
+// ============================================
+// Party H5 Game — Prisma Schema
+// 害你在心口难开·动作版
+// ============================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// 游戏房间
+// ============================================
+model Game {
+  id          String   @id @default(uuid())
+  code        String   @unique // 游戏入场码，用于扫码/链接
+  status      GameStatus @default(WAITING)
+
+  // 配置
+  playerCount Int      @default(6) // 4-8人
+  startTime   DateTime? // 可选，预设开始时间
+  endTime     DateTime  // 预设结束时间
+
+  // 团队奖惩（JSON数组，纯展示）
+  teamRewards   Json @default("[]") // ["海马体四人闺蜜套餐", ...]
+  teamPunishments Json @default("[]") // ["合唱一首歌", "真心话大冒险", ...]
+
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  startedAt   DateTime? // 实际开始时间
+  endedAt     DateTime? // 实际结束时间
+
+  // 关联
+  players     Player[]
+  events      GameEvent[]
+  tips        AnonymousTip[]
+
+  @@map("games")
+}
+
+// ============================================
+// 玩家
+// ============================================
+model Player {
+  id        String  @id @default(uuid())
+  gameId    String
+  game      Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  openId    String  // 微信OpenID，唯一身份标识
+  nickname  String  // 输入的昵称
+  avatar    String? // 头像URL（可选）
+
+  score     Int     @default(0) // 积分
+  isBottom2 Boolean @default(false) // 是否处于后2名（运行时计算，此处缓存）
+  votedEnd  Boolean @default(false) // 是否已点击结束游戏
+
+  // 统计字段（结算用，游戏中持续更新）
+  tasksCompleted     Int @default(0) // 成功完成的任务数
+  tasksDenied        Int @default(0) // 声明完成被否认的次数
+  challengesMade     Int @default(0) // 发起质疑的次数
+  challengesSucceeded Int @default(0) // 质疑成功的次数
+  challengesReceived Int @default(0) // 被质疑的次数
+  challengesHit      Int @default(0) // 被质疑命中的次数（质疑失败=没被命中）
+  timesTargeted      Int @default(0) // 被指定为目标的次数
+  punishmentsReceived Int @default(0) // 接受惩罚的次数
+  extremeTasksDrawn  Int @default(0) // 拿到超难任务的次数
+  totalTasksDrawn    Int @default(0) // 总共抽到的任务数
+
+  // 加入时间
+  joinedAt  DateTime @default(now())
+
+  // 关联
+  tasks             PlayerTask[]
+  declareCompletions DeclareComplete[] @relation("Declarer")
+  targetCompletions  DeclareComplete[] @relation("Target")
+  challengesMade_rel Challenge[] @relation("Challenger")
+  challengesReceived_rel Challenge[] @relation("Challenged")
+  pendingMessages   PendingMessage[]
+
+  @@unique([gameId, openId]) // 同一游戏中OpenID唯一
+  @@map("players")
+}
+
+// ============================================
+// 玩家手牌（当前任务）
+// ============================================
+model PlayerTask {
+  id        String  @id @default(uuid())
+  playerId  String
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId    String  // 冗余，方便查询
+
+  // 任务内容（从任务库抽取时快照，不引用库ID，因为允许重复抽取）
+  content   String  // 任务内容
+  difficulty TaskDifficulty // 难度
+  points    Int     // 积分：EASY=1, MEDIUM=2, HARD=3, EXTREME=5
+  taskType  String  @default("BEHAVIOR") // 任务类型：VERBAL/BEHAVIOR/EMOTIONAL/REVERSE
+  targetType TargetType @default(ANYONE) // 目标类型
+  targetName String? // 如果指定了具体玩家，存昵称（方便展示，非引用）
+
+  // 绑定惩罚（同难度随机绑定的惩罚内容快照）
+  punishmentContent String // 惩罚内容
+
+  // 状态
+  status    PlayerTaskStatus @default(ACTIVE)
+  declaredAt DateTime? // 声明完成的时间（只能声明一次）
+
+  // 时间
+  drawnAt   DateTime @default(now()) // 抽取时间
+  removedAt DateTime? // 移除时间
+
+  // 关联
+  declareComplete DeclareComplete? // 声明完成记录（一条任务最多一次）
+  challengeHit    Challenge[]      // 被质疑命中的记录
+
+  @@map("player_tasks")
+}
+
+// ============================================
+// 声明完成
+// ============================================
+model DeclareComplete {
+  id          String  @id @default(uuid())
+  gameId      String
+  taskId      String  @unique // PlayerTask ID — 一条任务只能声明一次
+  task        PlayerTask @relation(fields: [taskId], references: [id])
+
+  declarerId  String  // 声明方
+  declarer    Player  @relation("Declarer", fields: [declarerId], references: [id])
+  targetId    String  // 目标方
+  target      Player  @relation("Target", fields: [targetId], references: [id])
+
+  // 任务和惩罚内容快照（确认弹窗展示用）
+  taskContent       String
+  punishmentContent String
+
+  // 确认结果
+  status      ConfirmStatus @default(PENDING) // PENDING/CONFIRMED/DENIED
+  confirmedAt DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@map("declare_completions")
+}
+
+// ============================================
+// 质疑
+// ============================================
+model Challenge {
+  id            String  @id @default(uuid())
+  gameId        String
+
+  challengerId  String  // 质疑方
+  challenger    Player  @relation("Challenger", fields: [challengerId], references: [id])
+  challengedId  String  // 被质疑方
+  challenged    Player  @relation("Challenged", fields: [challengedId], references: [id])
+
+  guessContent  String  // 猜测的任务内容
+
+  // 结果
+  status        ChallengeStatus @default(PENDING) // PENDING/HIT/MISS
+  hitTaskId     String?  // 命中的具体任务ID（猜中时被质疑方选择）
+  hitTask       PlayerTask? @relation(fields: [hitTaskId], references: [id])
+
+  // 快照（结算回放用）
+  hitTaskContent     String? // 被命中的任务内容
+  hitPunishmentContent String? // 被命中的惩罚内容
+
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@map("challenges")
+}
+
+// ============================================
+// 动态流事件
+// ============================================
+model GameEvent {
+  id        String     @id @default(uuid())
+  gameId    String
+  game      Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  type      EventType  // COMPLETED/CHALLENGED
+  content   Json       // 事件内容（灵活JSON）
+
+  createdAt DateTime   @default(now())
+
+  @@map("game_events")
+}
+
+// ============================================
+// 匿名爆料
+// ============================================
+model AnonymousTip {
+  id            String  @id @default(uuid())
+  gameId        String
+  game          Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  content       String  // 爆料文案
+  sourceTaskId  String? // 来源任务ID（任务被刷新/完成后该爆料消失）
+  isActive      Boolean @default(true)
+
+  createdAt     DateTime @default(now())
+
+  @@map("anonymous_tips")
+}
+
+// ============================================
+// 待处理消息（轮询用）
+// ============================================
+model PendingMessage {
+  id        String  @id @default(uuid())
+  playerId  String
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId    String
+
+  type      MessageType // DECLARE_COMPLETE / CHALLENGE
+  relatedId String  // 关联的DeclareComplete或Challenge的ID
+  content   Json    // 消息内容快照
+
+  isRead    Boolean @default(false)
+  isHandled Boolean @default(false) // 是否已处理（确认/否认/猜中/没猜中）
+
+  createdAt DateTime @default(now())
+  handledAt DateTime?
+
+  @@map("pending_messages")
+}
+
+// ============================================
+// 任务库（从JSON导入）
+// ============================================
+model TaskLibrary {
+  id          String       @id @default(uuid())
+  difficulty  TaskDifficulty
+  content     String       // 任务内容
+  taskType    String       @default("BEHAVIOR") // VERBAL/BEHAVIOR/EMOTIONAL/REVERSE
+  targetType  TargetType   @default(ANYONE)
+
+  @@index([difficulty])
+  @@map("task_library")
+}
+
+// ============================================
+// 惩罚库（从JSON导入）
+// ============================================
+model PunishmentLibrary {
+  id          String       @id @default(uuid())
+  difficulty  TaskDifficulty
+  content     String       // 惩罚内容
+
+  @@index([difficulty])
+  @@map("punishment_library")
+}
+
+// ============================================
+// 枚举
+// ============================================
+enum GameStatus {
+  WAITING    // 等待玩家加入
+  PLAYING    // 游戏进行中
+  ENDED      // 游戏已结束
+}
+
+enum TaskDifficulty {
+  EASY       // 🟢 简单
+  MEDIUM     // 🟡 中等
+  HARD       // 🔴 困难
+  EXTREME    // 💀 超难
+}
+
+enum TargetType {
+  ANYONE     // 任意玩家
+  SPECIFIC_ONE  // 指定1人
+  SPECIFIC_MULTI // 指定多人
+}
+
+enum PlayerTaskStatus {
+  ACTIVE     // 当前手牌
+  COMPLETED  // 已完成（目标确认）
+  DENIED     // 声明完成被否认
+  CHALLENGED // 被质疑命中
+  DISCARDED  // 主动弃牌换牌
+}
+
+enum ConfirmStatus {
+  PENDING    // 等待确认
+  CONFIRMED  // 目标确认
+  DENIED     // 目标否认
+}
+
+enum ChallengeStatus {
+  PENDING    // 等待被质疑方回应
+  HIT        // 猜中了
+  MISS       // 没猜中
+}
+
+enum EventType {
+  COMPLETED  // 任务完成
+  CHALLENGED // 质疑成功
+}
+
+enum MessageType {
+  DECLARE_COMPLETE // 声明完成确认
+  CHALLENGE        // 质疑确认
+}
