@@ -83,8 +83,8 @@ export async function getSettlement(gameId: string) {
   // ======= 4. 勋章颁发 =======
   const medals = computeMedals(players);
 
-  // ======= 5. 能力图（最高分玩家） =======
-  const abilityChart = computeAbilityChart(players, 0); // 第一名
+  // ======= 5. 能力图（所有玩家） =======
+  const abilityCharts = players.map((_, index) => computeAbilityChart(players, index));
 
   // ======= 6. 团队奖惩 =======
   return {
@@ -92,7 +92,7 @@ export async function getSettlement(gameId: string) {
     uncompletedTasks,
     events,
     medals,
-    abilityChart,
+    abilityCharts,
     teamRewards: game.teamRewards as string[],
     teamPunishments: game.teamPunishments as string[],
   };

@@ -104,7 +104,7 @@ export interface SettlementData {
   uncompletedTasks: UncompletedTaskItem[];
   events: GameEventItem[];
   medals: MedalItem[];
-  abilityChart: AbilityChart;
+  abilityCharts: AbilityChart[];
   teamRewards: string[];
   teamPunishments: string[];
 }
