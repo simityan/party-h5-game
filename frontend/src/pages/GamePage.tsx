@@ -46,10 +46,10 @@ const DIFFICULTY_CONFIG: Record<string, {
   },
   MEDIUM: {
     emoji: '🟡',
-    color: 'text-green-500',
+    color: 'text-yellow-500',
     points: '+2',
-    rarityBg: 'bg-green-50',
-    rarityBorder: 'border-green-400',
+    rarityBg: 'bg-yellow-50',
+    rarityBorder: 'border-yellow-400',
     rarityLabel: '中等',
     glowShadow: 'shadow-sm',
   },
@@ -368,9 +368,9 @@ export default function GamePage() {
             <span className="text-xl font-bold text-purple-600">{player.score}分</span>
           </div>
 
-          {/* 后2名警告 */}
+          {/* 后2名警告 — 醒目红色提示 */}
           {player.isBottom2 && (
-            <div className="mt-2 bg-red-50 text-red-600 text-xs rounded-lg p-2 text-center">
+            <div className="mt-2 bg-red-50 border-2 border-red-300 text-red-600 text-sm font-bold rounded-lg p-2.5 text-center animate-pulse">
               ⚠️ 你当前处于后2名，加油！
             </div>
           )}
@@ -430,11 +430,12 @@ export default function GamePage() {
                   onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
                 >
                   <div
-                    className={`relative w-full transition-transform duration-500 ${isExpanded ? '' : ''}`}
+                    className="relative w-full transition-transform duration-500"
                     style={{
                       transformStyle: 'preserve-3d',
                       transform: isResolved ? 'rotateY(180deg)' : 'none',
                       minHeight: '180px',
+                      willChange: 'transform',
                     }}
                   >
                     {/* ===== 正面 — 活跃卡 ===== */}
@@ -495,9 +496,9 @@ export default function GamePage() {
                         task.status === 'COMPLETED'
                           ? 'border-green-400 bg-green-50'
                           : task.status === 'CANCELED'
-                            ? 'border-gray-400 bg-gray-50'
+                            ? 'border-gray-400 bg-gray-100'
                             : 'border-red-400 bg-red-50'
-                      } p-3 flex flex-col items-center justify-center`}
+                      } p-2 flex flex-col items-center justify-center`}
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -505,17 +506,27 @@ export default function GamePage() {
                         touchAction: 'manipulation',
                       }}
                     >
-                      <div className="text-2xl mb-1">
+                      <div className="text-xl mb-0.5">
                         {task.status === 'COMPLETED' ? '✅' : task.status === 'CANCELED' ? '❌' : '🛡️'}
                       </div>
                       <div className="text-[10px] font-bold text-gray-700 text-center leading-tight">
                         {task.status === 'COMPLETED' ? '已完成' : task.status === 'CANCELED' ? '未完成' : '被质疑'}
                       </div>
+                      {/* COMPLETED/CHALLENGED 显示惩罚内容 */}
                       {task.status !== 'CANCELED' && (
-                        <div className="mt-2 w-full border-t border-dashed border-gray-300 pt-1">
+                        <div className="mt-1.5 w-full border-t border-dashed border-gray-300 pt-1">
                           <div className="text-[9px] text-gray-400 text-center">⚠️ 惩罚</div>
-                          <div className="text-[10px] font-medium text-red-600 text-center leading-tight line-clamp-3">
+                          <div className="text-[10px] font-medium text-red-600 text-center leading-tight line-clamp-4">
                             {task.punishmentContent}
+                          </div>
+                        </div>
+                      )}
+                      {/* CANCELED 显示任务内容回顾 */}
+                      {task.status === 'CANCELED' && (
+                        <div className="mt-1.5 w-full border-t border-dashed border-gray-300 pt-1">
+                          <div className="text-[9px] text-gray-400 text-center">原任务</div>
+                          <div className="text-[9px] text-gray-500 text-center leading-tight line-clamp-3">
+                            {task.content}
                           </div>
                         </div>
                       )}
@@ -526,17 +537,33 @@ export default function GamePage() {
             })}
           </div>
 
-          {/* 展开详情面板 */}
+          {/* 展开详情面板 — 活跃卡展示完整信息+操作；已解决卡展示详情回顾 */}
           {expandedTaskId && (() => {
             const task = sortedTasks.find((t) => t.id === expandedTaskId);
-            if (!task || task.status !== 'ACTIVE') return null;
+            if (!task) return null;
             const dc = DIFFICULTY_CONFIG[task.difficulty] || DIFFICULTY_CONFIG.EASY;
+            const isResolved = task.status === 'COMPLETED' || task.status === 'CHALLENGED' || task.status === 'CANCELED';
             return (
-              <div className={`mt-3 rounded-xl border-2 ${dc.rarityBorder} bg-white p-4 shadow-sm`}>
+              <div className={`mt-3 rounded-xl border-2 ${
+                isResolved
+                  ? task.status === 'COMPLETED' ? 'border-green-400 bg-green-50'
+                    : task.status === 'CANCELED' ? 'border-gray-300 bg-gray-50'
+                    : 'border-red-400 bg-red-50'
+                  : `${dc.rarityBorder} bg-white`
+              } p-4 shadow-sm`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span>{dc.emoji}</span>
                   <span className={`text-xs font-bold ${dc.color}`}>{dc.rarityLabel} {dc.points}</span>
                   <span className="text-xs text-gray-400 ml-auto">{task.taskType}</span>
+                  {isResolved && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      task.status === 'COMPLETED' ? 'bg-green-100 text-green-700'
+                        : task.status === 'CANCELED' ? 'bg-gray-100 text-gray-500'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {task.status === 'COMPLETED' ? '已完成' : task.status === 'CANCELED' ? '已取消' : '被质疑'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm font-medium text-gray-800 mb-2">{task.content}</div>
                 <div className="space-y-1 text-xs text-gray-500">
@@ -544,8 +571,24 @@ export default function GamePage() {
                   {task.secondaryTargetNames.length > 0 && (
                     <p>👥 次要目标：<span className="text-gray-700 font-medium">{task.secondaryTargetNames.join('、')}</span></p>
                   )}
-                  <p>⚠️ 惩罚：<span className="text-gray-700">{task.punishmentContent}</span></p>
+                  <p>⚠️ 惩罚：<span className="text-red-600 font-medium">{task.punishmentContent}</span></p>
                 </div>
+                {/* 活跃卡显示声明完成按钮 */}
+                {!isResolved && (
+                  <div className="mt-3">
+                    <Button
+                      size="small"
+                      color="primary"
+                      loading={actionLoading === 'declare'}
+                      onClick={() => {
+                        setDeclareTaskId(task.id);
+                        setShowDeclarePopup(true);
+                      }}
+                    >
+                      ✅ 声明完成
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })()}
