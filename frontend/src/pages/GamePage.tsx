@@ -347,7 +347,7 @@ export default function GamePage() {
   const sortedTasks = [...tasks].sort((a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
+    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
       <div className="max-w-md mx-auto">
         {/* ====== 顶部区域 ====== */}
         <div className="bg-white p-4 shadow-sm">
@@ -425,7 +425,7 @@ export default function GamePage() {
               return (
                 <div
                   key={task.id}
-                  className="flex-1 min-w-0 max-w-[120px]"
+                  className="flex-1 min-w-0 no-context-menu"
                   style={{ perspective: '1000px' }}
                   onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
                 >
@@ -434,7 +434,7 @@ export default function GamePage() {
                     style={{
                       transformStyle: 'preserve-3d',
                       transform: isResolved ? 'rotateY(180deg)' : 'none',
-                      minHeight: '180px',
+                      minHeight: '200px',
                       willChange: 'transform',
                     }}
                   >
@@ -461,13 +461,13 @@ export default function GamePage() {
 
                       {/* 底部：目标 + 惩罚 */}
                       <div className="mt-2">
-                        <div className="text-[10px] text-gray-400 truncate">
+                        <div className="text-[11px] text-gray-400 truncate">
                           → {task.primaryTargetName}
                           {task.secondaryTargetNames.length > 0 && (
                             <span className="text-gray-300"> +{task.secondaryTargetNames.length}</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-gray-300 truncate">
+                        <div className="text-[11px] text-gray-300 truncate">
                           惩罚：???
                         </div>
                       </div>
@@ -476,7 +476,7 @@ export default function GamePage() {
                       {isExpanded && !isResolved && (
                         <div className="mt-2">
                           <Button
-                            size="mini"
+                            size="small"
                             color="primary"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -509,14 +509,14 @@ export default function GamePage() {
                       <div className="text-xl mb-0.5">
                         {task.status === 'COMPLETED' ? '✅' : task.status === 'CANCELED' ? '❌' : '🛡️'}
                       </div>
-                      <div className="text-[10px] font-bold text-gray-700 text-center leading-tight">
+                      <div className="text-[11px] font-bold text-gray-700 text-center leading-tight">
                         {task.status === 'COMPLETED' ? '已完成' : task.status === 'CANCELED' ? '未完成' : '被质疑'}
                       </div>
                       {/* COMPLETED/CHALLENGED 显示惩罚内容 */}
                       {task.status !== 'CANCELED' && (
                         <div className="mt-1.5 w-full border-t border-dashed border-gray-300 pt-1">
-                          <div className="text-[9px] text-gray-400 text-center">⚠️ 惩罚</div>
-                          <div className="text-[10px] font-medium text-red-600 text-center leading-tight line-clamp-4">
+                          <div className="text-[10px] text-gray-400 text-center">⚠️ 惩罚</div>
+                          <div className="text-[11px] font-medium text-red-600 text-center leading-tight line-clamp-4">
                             {task.punishmentContent}
                           </div>
                         </div>
@@ -524,8 +524,8 @@ export default function GamePage() {
                       {/* CANCELED 显示任务内容回顾 */}
                       {task.status === 'CANCELED' && (
                         <div className="mt-1.5 w-full border-t border-dashed border-gray-300 pt-1">
-                          <div className="text-[9px] text-gray-400 text-center">原任务</div>
-                          <div className="text-[9px] text-gray-500 text-center leading-tight line-clamp-3">
+                          <div className="text-[10px] text-gray-400 text-center">原任务</div>
+                          <div className="text-[10px] text-gray-500 text-center leading-tight line-clamp-3">
                             {task.content}
                           </div>
                         </div>
@@ -556,7 +556,7 @@ export default function GamePage() {
                   <span className={`text-xs font-bold ${dc.color}`}>{dc.rarityLabel} {dc.points}</span>
                   <span className="text-xs text-gray-400 ml-auto">{task.taskType}</span>
                   {isResolved && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                       task.status === 'COMPLETED' ? 'bg-green-100 text-green-700'
                         : task.status === 'CANCELED' ? 'bg-gray-100 text-gray-500'
                         : 'bg-red-100 text-red-700'
@@ -662,7 +662,7 @@ export default function GamePage() {
         visible={showDeclarePopup}
         onMaskClick={() => setShowDeclarePopup(false)}
         position="bottom"
-        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="p-6">
           <h3 className="text-base font-bold text-gray-800 mb-2">✅ 声明完成</h3>
@@ -696,7 +696,7 @@ export default function GamePage() {
         visible={showChallengePopup}
         onMaskClick={() => setShowChallengePopup(false)}
         position="bottom"
-        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="p-6">
           <h3 className="text-base font-bold text-gray-800 mb-4">🛡️ 质疑</h3>
@@ -727,7 +727,7 @@ export default function GamePage() {
               placeholder={'如"让他跟你碰杯"'}
               rows={2}
             />
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[11px] text-gray-400 mt-1">
               系统将自动匹配对方手牌，相似度≥75%即判定命中
             </p>
           </div>
@@ -742,7 +742,7 @@ export default function GamePage() {
         visible={showChallengeResultPopup}
         onMaskClick={() => setShowChallengeResultPopup(false)}
         position="bottom"
-        bodyStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+        bodyStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="p-6">
           {challengeResult && (
@@ -806,7 +806,7 @@ export default function GamePage() {
         visible={showMessageListPopup}
         onMaskClick={() => setShowMessageListPopup(false)}
         position="bottom"
-        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+        bodyStyle={{ maxHeight: '70vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="p-6">
           <h3 className="text-base font-bold text-gray-800 mb-4">📬 待处理消息 ({messages.length})</h3>
@@ -855,7 +855,7 @@ export default function GamePage() {
                     <p><span className="text-gray-500">任务内容：</span>{dc.taskContent}</p>
                     <p><span className="text-gray-500">惩罚内容：</span>{dc.punishmentContent}</p>
                   </div>
-                  <p className="text-[10px] text-gray-400 mb-4">
+                  <p className="text-xs text-gray-400 mb-4">
                     否认将自动触发质疑流程，双方各获得+1刷新机会
                   </p>
                   <div className="flex gap-3">

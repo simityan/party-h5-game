@@ -101,3 +101,39 @@ body.card-flipping {
   position: fixed;
   width: 100%;
 }
+
+/* ============================================
+   移动端微信H5优化
+   ============================================ */
+
+/* Safe-area CSS 变量 — 配合 viewport-fit=cover 使用 */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-right: env(safe-area-inset-right);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+}
+
+/* 全局触摸优化：禁止双击缩放、消除300ms延迟 */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 微信 iOS 弹性滚动修复：防止过度滚动露出底色 */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* 微信安全区域底部间距 */
+.wechat-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 禁止微信长按弹出菜单（卡牌等交互区域） */
+.no-context-menu {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
