@@ -64,15 +64,14 @@ export function getPendingMessages(playerId: string) {
   return request.get<unknown, PendingMessage[]>(`/player/${playerId}/messages`);
 }
 
-/** 声明完成 */
+/** 声明完成 — V2: 不再需要 targetId，由 task.primaryTargetId 自动获取 */
 export function declareComplete(playerId: string, data: {
   taskId: string;
-  targetId: string;
 }) {
   return request.post<unknown, DeclareComplete>(`/player/${playerId}/declare-complete`, data);
 }
 
-/** 发起质疑 */
+/** 发起质疑 — V2: 返回自动匹配结果（含相似度） */
 export function challenge(playerId: string, data: {
   challengedId: string;
   guessContent: string;
@@ -88,21 +87,18 @@ export function confirmDeclare(playerId: string, data: {
   return request.post<unknown, { success: boolean }>(`/player/${playerId}/confirm-declare`, data);
 }
 
-/** 确认质疑（猜中/没猜中） */
-export function confirmChallenge(playerId: string, data: {
-  challengeId: string;
-  hit: boolean;
-  hitTaskId?: string;
-}) {
-  return request.post<unknown, { success: boolean }>(`/player/${playerId}/confirm-challenge`, data);
+/** V2: 批量刷新手牌 — 替代弃牌换牌 */
+export function refreshAllTasks(playerId: string) {
+  return request.post<unknown, {
+    refreshChances: number;
+    tasks: PlayerTask[];
+  }>(`/player/${playerId}/refresh`);
 }
+
+// V2: 已移除 confirmChallenge（质疑自动判定）
+// V2: 已移除 discardTask（替换为 refreshAllTasks）
 
 // ==================== 任务相关 ====================
-
-/** 弃牌换牌 */
-export function discardTask(taskId: string) {
-  return request.post<unknown, PlayerTask>(`/task/${taskId}/discard`);
-}
 
 /** 获取动态流 */
 export function getFeed(gameId: string) {

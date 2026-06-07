@@ -43,10 +43,10 @@ export async function getSettlement(gameId: string) {
   }));
 
   // ======= 2. 未完成任务 =======
+  // V2: ACTIVE + CHALLENGED 都算未完成（DENIED 已移除，否认→直接转CHALLENGED）
   const uncompletedTasks = players.map((p) => {
-    // 未完成 = 还在手中的（ACTIVE）+ 被否认的（DENIED）+ 被质疑命中的（CHALLENGED）
     const unfinished = p.tasks.filter(
-      (t) => t.status === 'ACTIVE' || t.status === 'DENIED' || t.status === 'CHALLENGED',
+      (t) => t.status === 'ACTIVE' || t.status === 'CHALLENGED',
     );
     return {
       playerId: p.id,
@@ -57,8 +57,10 @@ export async function getSettlement(gameId: string) {
         difficulty: t.difficulty,
         points: t.points,
         taskType: t.taskType,
-        targetType: t.targetType,
-        targetName: t.targetName,
+        primaryTargetId: t.primaryTargetId,
+        primaryTargetName: t.primaryTargetName,
+        secondaryTargetIds: t.secondaryTargetIds as string[],
+        secondaryTargetNames: t.secondaryTargetNames as string[],
         punishmentContent: t.punishmentContent,
         status: t.status,
       })),

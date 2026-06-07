@@ -34,6 +34,7 @@ export async function generateGameCode(): Promise<string> {
 
 // ============================================
 // 格式化玩家信息（匹配前端 PlayerInfo 类型）
+// V2: 新增 refreshChances 字段
 // ============================================
 export function formatPlayerInfo(player: {
   id: string;
@@ -42,6 +43,7 @@ export function formatPlayerInfo(player: {
   score: number;
   isBottom2: boolean;
   votedEnd: boolean;
+  refreshChances: number;
 }) {
   return {
     id: player.id,
@@ -50,6 +52,7 @@ export function formatPlayerInfo(player: {
     score: player.score,
     isBottom2: player.isBottom2,
     votedEnd: player.votedEnd,
+    refreshChances: player.refreshChances,
   };
 }
 

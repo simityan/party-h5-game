@@ -1,7 +1,9 @@
 /**
  * 将 task-db/ 下的 JSON 文件导入 TaskLibrary 和 PunishmentLibrary 表
+ * V2: 移除 targetType 字段（由难度自动决定目标分配）
  * 用法: npm run db:seed
  */
+import 'dotenv/config';
 import prisma from './utils/prisma';
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +11,7 @@ import path from 'path';
 interface TaskItem {
   content: string;
   taskType?: string;
-  targetType?: string;
+  // V2: targetType 已移除，不再从JSON读取
 }
 
 interface PunishmentItem {
@@ -46,7 +48,7 @@ async function main() {
             difficulty,
             content: t.content,
             taskType: t.taskType || 'BEHAVIOR',
-            targetType: (t.targetType || 'ANYONE') as 'ANYONE' | 'SPECIFIC_ONE' | 'SPECIFIC_MULTI',
+            // V2: 不再设置 targetType，由难度决定目标分配
           })),
         });
         taskCount[difficulty as keyof typeof taskCount] = tasks.length;

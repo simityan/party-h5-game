@@ -1,6 +1,6 @@
 // ============================================
-// Party H5 Game — Prisma Schema
-// 害你在心口难开·动作版
+// Party H5 Game — Prisma Schema (V2)
+// 害你在心口难开·动作版 — V2 规则补充版
 // ============================================
 
 generator client {
@@ -59,6 +59,9 @@ model Player {
   isBottom2 Boolean @default(false) // 是否处于后2名（运行时计算，此处缓存）
   votedEnd  Boolean @default(false) // 是否已点击结束游戏
 
+  // V2: 刷新次数（初始3次，3卡全部resolve时+3，否认时双方各+1）
+  refreshChances Int @default(3)
+
   // 统计字段（结算用，游戏中持续更新）
   tasksCompleted     Int @default(0) // 成功完成的任务数
   tasksDenied        Int @default(0) // 声明完成被否认的次数
@@ -87,7 +90,7 @@ model Player {
 }
 
 // ============================================
-// 玩家手牌（当前任务）
+// 玩家手牌（当前任务）— V2 目标体系
 // ============================================
 model PlayerTask {
   id        String  @id @default(uuid())
@@ -100,13 +103,18 @@ model PlayerTask {
   difficulty TaskDifficulty // 难度
   points    Int     // 积分：EASY=1, MEDIUM=2, HARD=3, EXTREME=5
   taskType  String  @default("BEHAVIOR") // 任务类型：VERBAL/BEHAVIOR/EMOTIONAL/REVERSE
-  targetType TargetType @default(ANYONE) // 目标类型
-  targetName String? // 如果指定了具体玩家，存昵称（方便展示，非引用）
+
+  // V2 目标体系 — 按难度自动分配
+  // Easy: 1主目标; Medium: 1主+1次; Hard: 1主+3次; Extreme: 1主+全员次
+  primaryTargetId   String                // 主目标玩家ID
+  primaryTargetName String                // 主目标昵称（冗余展示）
+  secondaryTargetIds   Json @default("[]") // 次要目标ID列表 ["id1","id2"]
+  secondaryTargetNames Json @default("[]") // 次要目标昵称列表 ["Alice","Bob"]
 
   // 绑定惩罚（同难度随机绑定的惩罚内容快照）
   punishmentContent String // 惩罚内容
 
-  // 状态
+  // 状态 — V2: ACTIVE/COMPLETED/CHALLENGED (移除DENIED和DISCARDED)
   status    PlayerTaskStatus @default(ACTIVE)
   declaredAt DateTime? // 声明完成的时间（只能声明一次）
 
@@ -132,7 +140,7 @@ model DeclareComplete {
 
   declarerId  String  // 声明方
   declarer    Player  @relation("Declarer", fields: [declarerId], references: [id])
-  targetId    String  // 目标方
+  targetId    String  // 目标方（V2: 来自任务的 primaryTargetId）
   target      Player  @relation("Target", fields: [targetId], references: [id])
 
   // 任务和惩罚内容快照（确认弹窗展示用）
@@ -149,7 +157,7 @@ model DeclareComplete {
 }
 
 // ============================================
-// 质疑
+// 质疑 — V2 自动匹配（不再需要手动确认）
 // ============================================
 model Challenge {
   id            String  @id @default(uuid())
@@ -162,16 +170,19 @@ model Challenge {
 
   guessContent  String  // 猜测的任务内容
 
-  // 结果
-  status        ChallengeStatus @default(PENDING) // PENDING/HIT/MISS
-  hitTaskId     String?  // 命中的具体任务ID（猜中时被质疑方选择）
+  // V2: 系统自动判定，创建时即确定结果
+  status        ChallengeStatus // HIT/MISS (移除PENDING)
+
+  // V2: 自动匹配信息
+  similarityScore Float? // 相似度分数 (0-1)
+  hitTaskId     String?  // 自动匹配到的任务ID（命中时）
   hitTask       PlayerTask? @relation(fields: [hitTaskId], references: [id])
 
   // 快照（结算回放用）
   hitTaskContent     String? // 被命中的任务内容
   hitPunishmentContent String? // 被命中的惩罚内容
 
-  resolvedAt    DateTime?
+  resolvedAt    DateTime? // V2: 创建时即设置
   createdAt     DateTime @default(now())
 
   @@map("challenges")
@@ -212,6 +223,7 @@ model AnonymousTip {
 
 // ============================================
 // 待处理消息（轮询用）
+// V2: 仅用于声明完成确认（质疑不再需要手动确认）
 // ============================================
 model PendingMessage {
   id        String  @id @default(uuid())
@@ -219,12 +231,12 @@ model PendingMessage {
   player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
   gameId    String
 
-  type      MessageType // DECLARE_COMPLETE / CHALLENGE
-  relatedId String  // 关联的DeclareComplete或Challenge的ID
+  type      MessageType // V2: 仅 DECLARE_COMPLETE
+  relatedId String  // 关联的DeclareComplete的ID
   content   Json    // 消息内容快照
 
   isRead    Boolean @default(false)
-  isHandled Boolean @default(false) // 是否已处理（确认/否认/猜中/没猜中）
+  isHandled Boolean @default(false) // 是否已处理（确认/否认）
 
   createdAt DateTime @default(now())
   handledAt DateTime?
@@ -233,14 +245,13 @@ model PendingMessage {
 }
 
 // ============================================
-// 任务库（从JSON导入）
+// 任务库（从JSON导入）— V2: 移除targetType，由难度决定目标
 // ============================================
 model TaskLibrary {
   id          String       @id @default(uuid())
   difficulty  TaskDifficulty
-  content     String       // 任务内容
+  content     String       // 任务内容（V2模板: "让目标玩家……"/"让目标玩家及次要玩家……"等）
   taskType    String       @default("BEHAVIOR") // VERBAL/BEHAVIOR/EMOTIONAL/REVERSE
-  targetType  TargetType   @default(ANYONE)
 
   @@index([difficulty])
   @@map("task_library")
@@ -274,18 +285,10 @@ enum TaskDifficulty {
   EXTREME    // 💀 超难
 }
 
-enum TargetType {
-  ANYONE     // 任意玩家
-  SPECIFIC_ONE  // 指定1人
-  SPECIFIC_MULTI // 指定多人
-}
-
 enum PlayerTaskStatus {
   ACTIVE     // 当前手牌
   COMPLETED  // 已完成（目标确认）
-  DENIED     // 声明完成被否认
-  CHALLENGED // 被质疑命中
-  DISCARDED  // 主动弃牌换牌
+  CHALLENGED // 被质疑命中 / V2否认后也归入此状态
 }
 
 enum ConfirmStatus {
@@ -295,9 +298,8 @@ enum ConfirmStatus {
 }
 
 enum ChallengeStatus {
-  PENDING    // 等待被质疑方回应
-  HIT        // 猜中了
-  MISS       // 没猜中
+  HIT        // V2: 系统自动判定猜中
+  MISS       // V2: 系统自动判定未猜中
 }
 
 enum EventType {
@@ -306,6 +308,5 @@ enum EventType {
 }
 
 enum MessageType {
-  DECLARE_COMPLETE // 声明完成确认
-  CHALLENGE        // 质疑确认
+  DECLARE_COMPLETE // V2: 仅声明完成确认（质疑不再需要手动确认）
 }

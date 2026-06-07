@@ -61,8 +61,13 @@ export async function startGame(gameId: string) {
   if (game.status !== 'WAITING') throw new AppError(400, '当前游戏状态不允许开始');
   if (game.players.length < 4) throw new AppError(400, '至少需要4名玩家才能开始');
 
-  // 为每个玩家抽取3个任务
+  // V2: 确保每个玩家的refreshChances初始化为3（schema默认值，显式保险）
+  // 并为每个玩家抽取3个任务
   for (const player of game.players) {
+    await prisma.player.update({
+      where: { id: player.id },
+      data: { refreshChances: 3 },
+    });
     await drawTasksForPlayer(player.id, game.id, game.players);
   }
 

@@ -22,6 +22,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "fastest-levenshtein": "^1.0.16",
     "uuid": "^14.0.0"
   },
   "devDependencies": {

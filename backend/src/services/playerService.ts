@@ -3,6 +3,7 @@ import { formatPlayerInfo, updateBottom2Status, AppError } from '../utils/helper
 
 // ============================================
 // 获取玩家状态（积分、后2名警告、任务列表）
+// V2: 返回所有状态的任务（ACTIVE/COMPLETED/CHALLENGED），用于卡牌翻转展示
 // ============================================
 export async function getPlayerStatus(playerId: string) {
   const player = await prisma.player.findUnique({
@@ -20,19 +21,21 @@ export async function getPlayerStatus(playerId: string) {
     where: { id: playerId },
   });
 
-  const tasks = player.tasks
-    .filter((t) => t.status === 'ACTIVE') // 只返回当前手牌
-    .map((t) => ({
-      id: t.id,
-      content: t.content,
-      difficulty: t.difficulty,
-      points: t.points,
-      taskType: t.taskType,
-      targetType: t.targetType,
-      targetName: t.targetName,
-      punishmentContent: t.punishmentContent,
-      status: t.status,
-    }));
+  // V2: 返回所有状态的任务（前端根据状态展示不同卡片样式）
+  const tasks = player.tasks.map((t) => ({
+    id: t.id,
+    content: t.content,
+    difficulty: t.difficulty,
+    points: t.points,
+    taskType: t.taskType,
+    primaryTargetId: t.primaryTargetId,
+    primaryTargetName: t.primaryTargetName,
+    secondaryTargetIds: t.secondaryTargetIds as string[],
+    secondaryTargetNames: t.secondaryTargetNames as string[],
+    punishmentContent: t.punishmentContent,
+    status: t.status,
+    declaredAt: t.declaredAt ? new Date(t.declaredAt).toISOString() : null,
+  }));
 
   return {
     player: formatPlayerInfo(updatedPlayer!),
@@ -42,6 +45,7 @@ export async function getPlayerStatus(playerId: string) {
 
 // ============================================
 // 轮询获取待处理消息
+// V2: 仅处理 DECLARE_COMPLETE 类型（质疑不再需要手动确认）
 // ============================================
 export async function getPendingMessages(playerId: string) {
   const player = await prisma.player.findUnique({
@@ -91,23 +95,8 @@ export async function getPendingMessages(playerId: string) {
           status: declare.status,
         };
       }
-    } else if (msg.type === 'CHALLENGE') {
-      const challenge = await prisma.challenge.findUnique({
-        where: { id: msg.relatedId },
-        include: { challenger: true, challenged: true },
-      });
-      if (challenge) {
-        content = {
-          id: challenge.id,
-          challengerId: challenge.challengerId,
-          challengerNickname: challenge.challenger.nickname,
-          challengedId: challenge.challengedId,
-          challengedNickname: challenge.challenged.nickname,
-          guessContent: challenge.guessContent,
-          status: challenge.status,
-        };
-      }
     }
+    // V2: CHALLENGE 类型消息已移除，质疑由系统自动判定
 
     result.push({
       id: msg.id,

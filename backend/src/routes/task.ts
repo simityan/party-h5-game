@@ -3,12 +3,7 @@ import * as taskService from '../services/taskService';
 
 const router = Router();
 
-// POST /api/task/:id/discard — 弃牌换牌
-router.post('/:id/discard', async (req: Request, res: Response) => {
-  const id = req.params.id as string;
-  const result = await taskService.discardTask(id);
-  res.json(result);
-});
+// V2: 已移除 POST /:id/discard（弃牌换牌），由 POST /api/player/:id/refresh（批量刷新）替代
 
 // GET /api/task/feed/:gameId — 获取动态流
 router.get('/feed/:gameId', async (req: Request, res: Response) => {

@@ -31,17 +31,19 @@ router.get('/:id/messages', async (req: Request, res: Response) => {
 });
 
 // POST /api/player/:id/declare-complete — 声明完成
+// V2: 不再需要 targetId，由 task.primaryTargetId 自动获取
 router.post('/:id/declare-complete', async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const { taskId, targetId } = req.body;
-  if (!taskId || !targetId) {
-    throw new AppError(400, '缺少必要参数: taskId, targetId');
+  const { taskId } = req.body;
+  if (!taskId) {
+    throw new AppError(400, '缺少必要参数: taskId');
   }
-  const result = await taskService.declareComplete(id, { taskId, targetId });
+  const result = await taskService.declareComplete(id, { taskId });
   res.json(result);
 });
 
 // POST /api/player/:id/challenge — 发起质疑
+// V2: 返回自动匹配结果（相似度 + 命中/未命中）
 router.post('/:id/challenge', async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { challengedId, guessContent } = req.body;
@@ -63,19 +65,13 @@ router.post('/:id/confirm-declare', async (req: Request, res: Response) => {
   res.json(result);
 });
 
-// POST /api/player/:id/confirm-challenge — 确认质疑结果
-router.post('/:id/confirm-challenge', async (req: Request, res: Response) => {
+// POST /api/player/:id/refresh — V2 批量刷新手牌
+router.post('/:id/refresh', async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const { challengeId, hit, hitTaskId } = req.body;
-  if (!challengeId || typeof hit !== 'boolean') {
-    throw new AppError(400, '缺少必要参数: challengeId, hit');
-  }
-  const result = await taskService.confirmChallenge(id, {
-    challengeId,
-    hit,
-    hitTaskId,
-  });
+  const result = await taskService.refreshAllTasks(id);
   res.json(result);
 });
+
+// V2: 已移除 POST /:id/confirm-challenge（质疑自动判定，无需手动确认）
 
 export default router;

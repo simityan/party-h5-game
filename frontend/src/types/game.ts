@@ -1,11 +1,11 @@
 // 游戏状态枚举
 export type GameStatus = 'WAITING' | 'PLAYING' | 'ENDED';
 export type TaskDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXTREME';
-export type TargetType = 'ANYONE' | 'SPECIFIC_ONE' | 'SPECIFIC_MULTI';
-export type PlayerTaskStatus = 'ACTIVE' | 'COMPLETED' | 'DENIED' | 'CHALLENGED' | 'DISCARDED';
+// V2: 移除 TargetType，目标由难度自动分配
+export type PlayerTaskStatus = 'ACTIVE' | 'COMPLETED' | 'CHALLENGED'; // V2: 移除 DENIED/DISCARDED
 export type ConfirmStatus = 'PENDING' | 'CONFIRMED' | 'DENIED';
-export type ChallengeStatus = 'PENDING' | 'HIT' | 'MISS';
-export type MessageType = 'DECLARE_COMPLETE' | 'CHALLENGE';
+export type ChallengeStatus = 'HIT' | 'MISS'; // V2: 移除 PENDING，自动判定
+export type MessageType = 'DECLARE_COMPLETE'; // V2: 仅声明完成，质疑不再需要消息确认
 
 // 游戏信息
 export interface GameInfo {
@@ -28,19 +28,24 @@ export interface PlayerInfo {
   score: number;
   isBottom2: boolean;
   votedEnd: boolean;
+  refreshChances: number; // V2: 剩余刷新次数
 }
 
-// 玩家任务（手牌）
+// 玩家任务（手牌）— V2 目标体系
 export interface PlayerTask {
   id: string;
   content: string;
   difficulty: TaskDifficulty;
   points: number;
   taskType: string;
-  targetType: TargetType;
-  targetName: string | null;
+  // V2: 按难度自动分配目标
+  primaryTargetId: string;
+  primaryTargetName: string;
+  secondaryTargetIds: string[];
+  secondaryTargetNames: string[];
   punishmentContent: string;
   status: PlayerTaskStatus;
+  declaredAt: string | null; // 声明完成的时间
 }
 
 // 声明完成
@@ -55,7 +60,7 @@ export interface DeclareComplete {
   status: ConfirmStatus;
 }
 
-// 质疑
+// 质疑 — V2 自动匹配结果
 export interface Challenge {
   id: string;
   challengerId: string;
@@ -63,7 +68,12 @@ export interface Challenge {
   challengedId: string;
   challengedNickname: string;
   guessContent: string;
-  status: ChallengeStatus;
+  status: ChallengeStatus; // HIT | MISS
+  // V2: 自动匹配信息
+  similarityScore: number | null; // 相似度分数 (0-1)
+  hitTaskId: string | null; // 自动匹配到的任务ID
+  hitTaskContent: string | null; // 被命中的任务内容
+  hitPunishmentContent: string | null; // 被命中的惩罚内容
 }
 
 // 动态流事件
@@ -77,6 +87,7 @@ export interface GameEventItem {
     challengedNickname?: string;
     taskContent: string;
     punishmentContent: string;
+    denialTriggered?: boolean; // V2: 否认触发质疑标记
   };
   createdAt: string;
 }
@@ -87,12 +98,12 @@ export interface AnonymousTip {
   content: string;
 }
 
-// 待处理消息
+// 待处理消息 — V2: 仅声明完成
 export interface PendingMessage {
   id: string;
   type: MessageType;
   relatedId: string;
-  content: DeclareComplete | Challenge;
+  content: DeclareComplete; // V2: 只有 DeclareComplete 类型
   isRead: boolean;
   isHandled: boolean;
   createdAt: string;
