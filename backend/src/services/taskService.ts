@@ -650,135 +650,147 @@ export async function challenge(
   const isHitResult = bestMatch !== null;
 
   // 创建质疑记录（V2: 创建时即确定结果，不再需要手动确认）
-  const challengeRecord = await prisma.$transaction(async (tx) => {
-    // SEVERE #2 FIX: 并发控制 — 在事务内重新检查命中任务状态
-    // 防止同一任务被多个质疑同时命中
-    if (isHitResult && bestMatch) {
-      const currentTask = await tx.playerTask.findUnique({
-        where: { id: bestMatch.task.id },
-      });
-      if (!currentTask || currentTask.status !== 'ACTIVE') {
-        // 任务已被其他质疑先命中，本次质疑自动失败
-        const record = await tx.challenge.create({
-          data: {
-            gameId: player.gameId,
-            challengerId: playerId,
-            challengedId: data.challengedId,
-            guessContent: data.guessContent,
-            status: 'MISS',
-            similarityScore: bestMatch.similarity,
-            hitTaskId: null,
-            hitTaskContent: null,
-            hitPunishmentContent: null,
-            resolvedAt: new Date(),
-          },
-          include: { challenger: true, challenged: true },
+  // SEVERE #2 FIX: 应用层状态检查 + DB 层 hitTaskId @unique 约束，双重防护并发重复命中
+  let challengeRecord;
+  try {
+    challengeRecord = await prisma.$transaction(async (tx) => {
+      // SEVERE #2 FIX: 并发控制 — 在事务内重新检查命中任务状态
+      // 防止同一任务被多个质疑同时命中
+      if (isHitResult && bestMatch) {
+        const currentTask = await tx.playerTask.findUnique({
+          where: { id: bestMatch.task.id },
         });
+        if (!currentTask || currentTask.status !== 'ACTIVE') {
+          // 任务已被其他质疑先命中，本次质疑自动失败
+          const record = await tx.challenge.create({
+            data: {
+              gameId: player.gameId,
+              challengerId: playerId,
+              challengedId: data.challengedId,
+              guessContent: data.guessContent,
+              status: 'MISS',
+              similarityScore: bestMatch.similarity,
+              hitTaskId: null,
+              hitTaskContent: null,
+              hitPunishmentContent: null,
+              resolvedAt: new Date(),
+            },
+            include: { challenger: true, challenged: true },
+          });
 
-        await tx.player.update({
-          where: { id: playerId },
-          data: { challengesMade: { increment: 1 } },
-        });
+          await tx.player.update({
+            where: { id: playerId },
+            data: { challengesMade: { increment: 1 } },
+          });
 
-        await tx.player.update({
-          where: { id: data.challengedId },
-          data: { challengesReceived: { increment: 1 } },
-        });
+          await tx.player.update({
+            where: { id: data.challengedId },
+            data: { challengesReceived: { increment: 1 } },
+          });
 
-        return record;
+          return record;
+        }
       }
-    }
-    const record = await tx.challenge.create({
-      data: {
-        gameId: player.gameId,
-        challengerId: playerId,
-        challengedId: data.challengedId,
-        guessContent: data.guessContent,
-        status: isHitResult ? 'HIT' : 'MISS',
-        similarityScore: bestMatch?.similarity ?? null,
-        hitTaskId: bestMatch?.task.id ?? null,
-        hitTaskContent: bestMatch?.task.content ?? null,
-        hitPunishmentContent: bestMatch?.task.punishmentContent ?? null,
-        resolvedAt: new Date(),
-      },
-      include: { challenger: true, challenged: true },
-    });
-
-    // 更新发起方统计
-    await tx.player.update({
-      where: { id: playerId },
-      data: { challengesMade: { increment: 1 } },
-    });
-
-    // 更新被质疑方统计
-    await tx.player.update({
-      where: { id: data.challengedId },
-      data: { challengesReceived: { increment: 1 } },
-    });
-
-    if (isHitResult && bestMatch) {
-      // ======= 质疑命中 =======
-
-      // 更新被命中任务状态
-      await tx.playerTask.update({
-        where: { id: bestMatch.task.id },
-        data: { status: 'CHALLENGED', removedAt: new Date() },
-      });
-
-      // 质疑方得分
-      await tx.player.update({
-        where: { id: playerId },
-        data: {
-          score: { increment: bestMatch.task.points },
-          challengesSucceeded: { increment: 1 },
-        },
-      });
-
-      // 被质疑方统计 + 刷新（V2: 质疑命中→双方各+1刷新）
-      await tx.player.update({
-        where: { id: data.challengedId },
-        data: {
-          challengesHit: { increment: 1 },
-          punishmentsReceived: { increment: 1 },
-          refreshChances: { increment: 1 },
-        },
-      });
-
-      // 创建动态流事件
-      await tx.gameEvent.create({
+      const record = await tx.challenge.create({
         data: {
           gameId: player.gameId,
-          type: 'CHALLENGED',
-          content: {
-            challengerNickname: record.challenger.nickname,
-            challengedNickname: record.challenged.nickname,
-            taskContent: bestMatch.task.content,
-            punishmentContent: bestMatch.task.punishmentContent,
-          },
+          challengerId: playerId,
+          challengedId: data.challengedId,
+          guessContent: data.guessContent,
+          status: isHitResult ? 'HIT' : 'MISS',
+          similarityScore: bestMatch?.similarity ?? null,
+          hitTaskId: bestMatch?.task.id ?? null,
+          hitTaskContent: bestMatch?.task.content ?? null,
+          hitPunishmentContent: bestMatch?.task.punishmentContent ?? null,
+          resolvedAt: new Date(),
         },
+        include: { challenger: true, challenged: true },
       });
 
-      // 移除对应匿名爆料
-      await tx.anonymousTip.updateMany({
-        where: { sourceTaskId: bestMatch.task.id },
-        data: { isActive: false },
+      // 更新发起方统计
+      await tx.player.update({
+        where: { id: playerId },
+        data: { challengesMade: { increment: 1 } },
       });
 
-      // M8 FIX: 事务内检查被质疑方是否所有任务都已 resolve → 是则 +3 刷新次数
-      const activeCount = await tx.playerTask.count({
-        where: { playerId: data.challengedId, gameId: player.gameId, status: 'ACTIVE' },
+      // 更新被质疑方统计
+      await tx.player.update({
+        where: { id: data.challengedId },
+        data: { challengesReceived: { increment: 1 } },
       });
-      if (activeCount === 0) {
+
+      if (isHitResult && bestMatch) {
+        // ======= 质疑命中 =======
+
+        // 更新被命中任务状态
+        await tx.playerTask.update({
+          where: { id: bestMatch.task.id },
+          data: { status: 'CHALLENGED', removedAt: new Date() },
+        });
+
+        // 质疑方得分 + 刷新（V2: 质疑命中→双方各+1刷新）
+        await tx.player.update({
+          where: { id: playerId },
+          data: {
+            score: { increment: bestMatch.task.points },
+            challengesSucceeded: { increment: 1 },
+            refreshChances: { increment: 1 },
+          },
+        });
+
+        // 被质疑方统计 + 刷新（V2: 质疑命中→双方各+1刷新）
         await tx.player.update({
           where: { id: data.challengedId },
-          data: { refreshChances: { increment: 3 } },
+          data: {
+            challengesHit: { increment: 1 },
+            punishmentsReceived: { increment: 1 },
+            refreshChances: { increment: 1 },
+          },
         });
-      }
-    }
-    // V2: 质疑不再发送待处理消息（自动判定，无 PENDING 状态）
 
-    return record;
-  });
+        // 创建动态流事件
+        await tx.gameEvent.create({
+          data: {
+            gameId: player.gameId,
+            type: 'CHALLENGED',
+            content: {
+              challengerNickname: record.challenger.nickname,
+              challengedNickname: record.challenged.nickname,
+              taskContent: bestMatch.task.content,
+              punishmentContent: bestMatch.task.punishmentContent,
+            },
+          },
+        });
+
+        // 移除对应匿名爆料
+        await tx.anonymousTip.updateMany({
+          where: { sourceTaskId: bestMatch.task.id },
+          data: { isActive: false },
+        });
+
+        // M8 FIX: 事务内检查被质疑方是否所有任务都已 resolve → 是则 +3 刷新次数
+        const activeCount = await tx.playerTask.count({
+          where: { playerId: data.challengedId, gameId: player.gameId, status: 'ACTIVE' },
+        });
+        if (activeCount === 0) {
+          await tx.player.update({
+            where: { id: data.challengedId },
+            data: { refreshChances: { increment: 3 } },
+          });
+        }
+      }
+      // V2: 质疑不再发送待处理消息（自动判定，无 PENDING 状态）
+
+      return record;
+    });
+  } catch (err) {
+    // P2002: hitTaskId @unique 约束冲突 — 极端并发下两个事务同时通过 ACTIVE 检查
+    // 第二个事务提交时 DB 层拒绝，降级为"该任务已被质疑"提示
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new AppError(409, '该任务已被其他玩家质疑命中，请刷新后再试');
+    }
+    throw err;
+  }
 
   // 更新后2名状态
   await updateBottom2Status(player.gameId);

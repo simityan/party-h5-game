@@ -178,7 +178,7 @@ model Challenge {
 
   // V2: 自动匹配信息
   similarityScore Float? // 相似度分数 (0-1)
-  hitTaskId     String?  // 自动匹配到的任务ID（命中时）
+  hitTaskId     String?  @unique // 自动匹配到的任务ID（命中时）；唯一约束防止同一任务被重复命中
   hitTask       PlayerTask? @relation(fields: [hitTaskId], references: [id], onDelete: SetNull)
 
   // 快照（结算回放用）
