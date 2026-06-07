@@ -9,6 +9,7 @@ import type {
   SettlementData,
   DeclareComplete,
   Challenge,
+  PollData,
 } from '../types/game';
 
 // ==================== 游戏相关 ====================
@@ -36,7 +37,7 @@ export function startGame(gameId: string) {
 
 /** 结束游戏（玩家投票） */
 export function endGame(gameId: string, playerId: string) {
-  return request.post<unknown, { allVoted: boolean }>(`/game/${gameId}/end`, { playerId });
+  return request.post<unknown, { allVoted: boolean; votedCount: number; totalPlayers: number }>(`/game/${gameId}/end`, { playerId });
 }
 
 /** 获取结算数据 */
@@ -93,6 +94,11 @@ export function refreshAllTasks(playerId: string) {
     refreshChances: number;
     tasks: PlayerTask[];
   }>(`/player/${playerId}/refresh`);
+}
+
+/** V2: 合并轮询 — 单请求获取全部游戏数据（替代5个独立轮询） */
+export function pollGameData(playerId: string) {
+  return request.get<unknown, PollData>(`/player/${playerId}/poll`);
 }
 
 // V2: 已移除 confirmChallenge（质疑自动判定）

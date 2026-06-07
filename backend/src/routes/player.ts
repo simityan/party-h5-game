@@ -23,6 +23,13 @@ router.get('/:id/status', async (req: Request, res: Response) => {
   res.json(result);
 });
 
+// GET /api/player/:id/poll — V2 合并轮询（单请求获取全部游戏数据）
+router.get('/:id/poll', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const result = await playerService.pollGameData(id);
+  res.json(result);
+});
+
 // GET /api/player/:id/messages — 轮询获取待处理消息
 router.get('/:id/messages', async (req: Request, res: Response) => {
   const id = req.params.id as string;

@@ -1,102 +1,202 @@
 [
-  { "content": "让目标主动跟你碰杯", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标夸你今天好看", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你倒一杯饮料", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家递给你纸巾", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标跟你合影一张", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说出'没问题'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你递零食", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你拿手机", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标跟你干杯", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你真厉害'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你让座", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家说'好的'", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标帮你打开瓶盖", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你击掌", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标夸你的穿搭", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家给你递湿巾", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说出'好吧好吧'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你倒酒", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你握手", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你拍照", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说'收到'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标主动给你续杯", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你递筷子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家跟你比个赞", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说'你说的对'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你削水果", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标夸你的发型", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你递纸", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说'嗯嗯好的'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你拿外套", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你比个心", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你倒水", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说'行行行'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你递杯垫", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标夸你的笑容", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你传话", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标跟你碰拳头", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标主动给你盛汤", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'听你的'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你拿包", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家说'没问题'", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标给你拿纸杯", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你拥抱一下", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你开心就好'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你拿筷子", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标主动给你开瓶水", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标夸你的气质", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'下次一定'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你擦桌子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家给你让座", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标说'好的好的'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你递勺子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你拍合照", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家夸你一句", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标主动给你点菜", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你来你来'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你拿饮料", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'有你真好'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家跟你击掌", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标给你拿餐巾纸", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'可以可以'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你搬椅子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标跟你碰肘", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家说'你真厉害'", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标主动给你倒茶", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'我请客'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你递菜单", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你觉得呢'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你拿饮料", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标主动帮你叫服务员", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'都听你的'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你加微信", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'好久不见'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家主动给你倒水", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标给你发红包", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你先请'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你拿充电器", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'下次我请'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家跟你碰杯", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标主动给你递杯子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'辛苦了'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标给你拿纸巾擦手", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'你说的有道理'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家帮你叫服务员", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标帮你拿碗", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'真的吗'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标主动给你开灯", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'太厉害了'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家给你夹菜", "taskType": "BEHAVIOR", "targetType": "ANYONE" },
-  { "content": "让目标给你让路", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'好嘞'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标帮你拿拖鞋", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'必须的'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家说'好的没问题'", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标帮你关窗户", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'靠你了'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标主动给你扇风", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" },
-  { "content": "让目标说'我信你'", "taskType": "VERBAL", "targetType": "SPECIFIC_ONE" },
-  { "content": "让任意玩家说'你说了算'", "taskType": "VERBAL", "targetType": "ANYONE" },
-  { "content": "让目标给你拿毯子", "taskType": "BEHAVIOR", "targetType": "SPECIFIC_ONE" }
+  {
+    "content": "让目标玩家主动给你推荐一道菜并说出推荐理由",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家跟你分享一个最近看的剧/电影并说感受",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家夸你一个具体的优点超过3句",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家主动跟你搭话并问出关于另一个玩家的问题",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家主动给你讲一个他/她的糗事",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家摸耳朵3秒",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家说出你五官最美的一个部位，并解释",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家跟你分享一首最近单曲循环的歌",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出你的全名",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出“我很棒”这个词",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出他/她今天出门前做的最后一件事",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出自己的全名两遍",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家用三个词描述你",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家告诉你他/她最近在追的一部剧/综艺",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家跟你玩一把剪刀石头布",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家和你对视超过5秒",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家说出他/她最想和你一起做的一件事",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家跟你分享他/她今天最开心的一件事",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家主动给你倒一次酒/饮料并说出理由",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家在对话中自然说出“你说得对”这句话",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家对你说“你真好”",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出他/她最近最想去的城市和理由",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出自己最想做的职业",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家在对话中提及你的家人",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家在聊天中自然提到一部电影的名字",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家猜你口袋里装了什么",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出一个他/她想玩的游戏",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家对着你大笑",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家喂你一口饮料/吃一口菜",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家说出你们第一次见面的场景和印象",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出他/她手机里最近拍的一张照片是什么",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出你最常用的一个口头禅",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家主动跟你碰拳或击掌",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家说出他/她手机里存的你的备注名",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家和你一起哼一首歌",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家说出他/她冰箱里最奇怪的一样东西",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出自己最像的明星",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出自己最美的一个五官",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出伴侣/crush的优点",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家说出自己最想学的技能",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "阻止目标玩家与其它玩家碰杯2次（未阻止成功不计数）",
+    "taskType": "REVERSE"
+  },
+  {
+    "content": "阻止目标玩家跟另一名玩家的碰杯2次",
+    "taskType": "REVERSE"
+  },
+  {
+    "content": "阻止目标玩家夹正要夹的那盘菜2次",
+    "taskType": "REVERSE"
+  },
+  {
+    "content": "阻止目标玩家放下筷子2次",
+    "taskType": "REVERSE"
+  },
+  {
+    "content": "阻止目标玩家穿鞋2次",
+    "taskType": "REVERSE"
+  },
+  {
+    "content": "让目标玩家帮你把猫抱过来",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家提及在场所有人都认识的其他人",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "对目标玩家说一句你的方言并得到对方的方言回应",
+    "taskType": "VERBAL"
+  },
+  {
+    "content": "让目标玩家双手交叉环抱",
+    "taskType": "BEHAVIOR"
+  },
+  {
+    "content": "让目标玩家站起来夹一次菜",
+    "taskType": "BEHAVIOR"
+  }
 ]

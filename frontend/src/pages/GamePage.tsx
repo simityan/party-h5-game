@@ -1,17 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Popup, TextArea, Toast, Dialog, Badge } from 'antd-mobile';
 import {
-  getPlayerStatus,
-  getPendingMessages,
-  getFeed,
-  getTips,
+  pollGameData,
   declareComplete,
   challenge,
   confirmDeclare,
   refreshAllTasks,
   endGame,
-  getGame,
 } from '../api/game';
 import type {
   PlayerInfo,
@@ -50,10 +46,10 @@ const DIFFICULTY_CONFIG: Record<string, {
   },
   MEDIUM: {
     emoji: '🟡',
-    color: 'text-yellow-500',
+    color: 'text-green-500',
     points: '+2',
-    rarityBg: 'bg-white',
-    rarityBorder: 'border-yellow-300',
+    rarityBg: 'bg-green-50',
+    rarityBorder: 'border-green-400',
     rarityLabel: '中等',
     glowShadow: 'shadow-sm',
   },
@@ -77,31 +73,12 @@ const DIFFICULTY_CONFIG: Record<string, {
   },
 };
 
-// ========== 目标展示 ==========
-function getTargetDisplay(task: PlayerTask): string {
-  const names = [task.primaryTargetName, ...task.secondaryTargetNames].filter(Boolean);
-  if (names.length === 0) return '—';
-  if (names.length === 1) return names[0];
-  return `${names[0]}、${names.slice(1).join('、')}`;
-}
-
 export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const playerId = localStorage.getItem('playerId') || '';
 
-  // playerId 缺失 → 跳转加入页
-  useEffect(() => {
-    if (!playerId) {
-      navigate('/join', { replace: true });
-    }
-  }, [playerId, navigate]);
-
-  if (!playerId) {
-    return null;
-  }
-
-  // ========== 状态 ==========
+  // ========== 状态（所有 Hook 必须在条件返回之前调用，遵守 React Rules of Hooks） ==========
   const [game, setGame] = useState<GameInfo | null>(null);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [tasks, setTasks] = useState<PlayerTask[]>([]);
@@ -129,95 +106,103 @@ export default function GamePage() {
 
   const [showRules, setShowRules] = useState(false);
 
-  // 其他玩家（不含自己）
-  const otherPlayers = game?.players.filter((p) => p.id !== playerId) || [];
+  // S1 FIX: 防止并发轮询重叠（前一次还没返回就触发下一次）
+  const isPollingRef = useRef(false);
 
-  // ========== 轮询 ==========
+  // L3 FIX: 首次轮询失败时记录错误状态，避免永远卡在"加载中"
+  const [loadError, setLoadError] = useState(false);
 
-  const fetchGameInfo = useCallback(async () => {
-    if (!gameId) return;
-    try {
-      const data = await getGame(gameId);
-      setGame(data);
-      if (data.status === 'ENDED') {
-        navigate(`/settlement/${gameId}`);
-      }
-    } catch {
-      // 静默失败
+  // 错误提示节流：30秒内最多提示1次，避免轮询错误刷屏
+  const lastErrorToastRef = useRef(0);
+  const showErrorToast = useCallback((msg: string) => {
+    const now = Date.now();
+    if (now - lastErrorToastRef.current > 30000) {
+      lastErrorToastRef.current = now;
+      Toast.show({ icon: 'fail', content: msg });
     }
-  }, [gameId, navigate]);
+  }, []);
 
-  const fetchStatus = useCallback(async () => {
-    if (!playerId) return;
+  // 合并轮询：单请求获取 game + player + tasks + messages + feed + tips
+  const pollAll = useCallback(async () => {
+    if (!playerId || isPollingRef.current) return;
+    isPollingRef.current = true;
     try {
-      const data = await getPlayerStatus(playerId);
+      const data = await pollGameData(playerId);
+      setGame(data.game);
       setPlayer(data.player);
       setTasks(data.tasks);
+      setMessages(data.messages.filter((m) => !m.isHandled));
+      setFeed(data.feed);
+      setTips(data.tips);
+      setLoadError(false);
+      // 游戏已结束 → 跳转结算页
+      if (data.game?.status === 'ENDED' && gameId) {
+        navigate(`/settlement/${gameId}`);
+      }
+      // L1 FIX: 游戏状态为 WAITING → 跳转大厅页（防止异常回退）
+      if (data.game?.status === 'WAITING' && gameId) {
+        navigate(`/lobby/${gameId}`, { replace: true });
+      }
     } catch {
-      // 静默失败
+      setLoadError(true);
+      showErrorToast('数据同步失败，请检查网络');
+    } finally {
+      isPollingRef.current = false;
     }
-  }, [playerId]);
+  }, [playerId, gameId, navigate, showErrorToast]);
 
-  const fetchMessages = useCallback(async () => {
-    if (!playerId) return;
-    try {
-      const data = await getPendingMessages(playerId);
-      setMessages(data.filter((m) => !m.isHandled));
-    } catch {
-      // 静默失败
+  // playerId 缺失 → 跳转加入页
+  useEffect(() => {
+    if (!playerId) {
+      navigate('/join', { replace: true });
     }
-  }, [playerId]);
-
-  const fetchFeed = useCallback(async () => {
-    if (!gameId) return;
-    try {
-      const data = await getFeed(gameId);
-      setFeed(data);
-    } catch {
-      // 静默失败
-    }
-  }, [gameId]);
-
-  const fetchTips = useCallback(async () => {
-    if (!gameId) return;
-    try {
-      const data = await getTips(gameId);
-      setTips(data);
-    } catch {
-      // 静默失败
-    }
-  }, [gameId]);
+  }, [playerId, navigate]);
 
   // 主轮询：3秒一次
   useEffect(() => {
-    fetchGameInfo();
-    fetchStatus();
-    fetchMessages();
-    fetchFeed();
-    fetchTips();
-
-    const timer = setInterval(() => {
-      fetchGameInfo();
-      fetchStatus();
-      fetchMessages();
-      fetchFeed();
-      fetchTips();
-    }, 3000);
-
+    if (!playerId) return;
+    pollAll();
+    const timer = setInterval(pollAll, 3000);
     return () => clearInterval(timer);
-  }, [fetchGameInfo, fetchStatus, fetchMessages, fetchFeed, fetchTips]);
+  }, [pollAll, playerId]);
+
+  // 操作后手动刷新（复用合并轮询）
+  const refreshAfterAction = useCallback(async () => {
+    if (!playerId) return;
+    try {
+      const data = await pollGameData(playerId);
+      setGame(data.game);
+      setPlayer(data.player);
+      setTasks(data.tasks);
+      setMessages(data.messages.filter((m) => !m.isHandled));
+      setFeed(data.feed);
+      setTips(data.tips);
+    } catch {
+      // 操作后刷新失败不影响主流程，静默
+    }
+  }, [playerId]);
+
+  // 其他玩家（不含自己）
+  const otherPlayers = game?.players.filter((p) => p.id !== playerId) || [];
+
+  // S2/S3 FIX: 操作中 loading 状态，防止重复点击
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // ========== 操作 ==========
 
   // V2: 声明完成 — 不再需要选目标，由 task.primaryTargetId 自动获取
   const handleDeclare = async () => {
+    if (actionLoading) return;
+    setActionLoading('declare');
     try {
       await declareComplete(playerId, { taskId: declareTaskId });
       Toast.show({ icon: 'success', content: '已声明完成，等待目标确认' });
       setShowDeclarePopup(false);
-      fetchStatus();
+      refreshAfterAction();
     } catch (err: any) {
       Toast.show({ icon: 'fail', content: err?.response?.data?.message || '声明失败' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -231,6 +216,8 @@ export default function GamePage() {
       Toast.show({ icon: 'fail', content: '请输入你猜测的任务内容' });
       return;
     }
+    if (actionLoading) return;
+    setActionLoading('challenge');
     try {
       const result = await challenge(playerId, {
         challengedId: challengeTargetId,
@@ -242,9 +229,11 @@ export default function GamePage() {
       // V2: 直接展示自动匹配结果
       setChallengeResult(result);
       setShowChallengeResultPopup(true);
-      fetchStatus();
+      refreshAfterAction();
     } catch (err: any) {
       Toast.show({ icon: 'fail', content: err?.response?.data?.message || '质疑失败' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -260,34 +249,44 @@ export default function GamePage() {
       Toast.show({ icon: 'fail', content: '有待确认的声明，暂不能刷新' });
       return;
     }
+    if (actionLoading) return;
     const result = await Dialog.confirm({
       title: '确认刷新全部手牌？',
       content: `剩余 ${player.refreshChances} 次刷新机会，刷新后消耗1次`,
     });
     if (result) {
+      setActionLoading('refresh');
       try {
         const res = await refreshAllTasks(playerId);
         setTasks(res.tasks);
         setPlayer((prev) => prev ? { ...prev, refreshChances: res.refreshChances } : prev);
         Toast.show({ icon: 'success', content: `已刷新！剩余 ${res.refreshChances} 次` });
+        // Bug O FIX: 刷新后同步 game/feed/tips/messages（直接更新只覆盖了 tasks 和 player）
+        refreshAfterAction();
       } catch (err: any) {
         Toast.show({ icon: 'fail', content: err?.response?.data?.message || '刷新失败' });
+      } finally {
+        setActionLoading(null);
       }
     }
   };
 
   const handleEndGame = async () => {
+    if (!gameId) {
+      Toast.show({ icon: 'fail', content: '游戏信息异常' });
+      return;
+    }
     const result = await Dialog.confirm({
       title: '确认结束游戏？',
-      content: '需要超过半数玩家点击结束才会结算',
+      content: '需要全员同意才会结算（所有玩家都点击结束）',
     });
     if (result) {
       try {
-        const res = await endGame(gameId!, playerId);
+        const res = await endGame(gameId, playerId);
         if (res.allVoted) {
           Toast.show({ icon: 'success', content: '全员已结束，正在结算...' });
         } else {
-          Toast.show({ icon: 'success', content: '已投票结束，等待其他玩家' });
+          Toast.show({ icon: 'success', content: `已投票结束（${res.votedCount}/${res.totalPlayers}），等待其他玩家` });
         }
       } catch (err: any) {
         Toast.show({ icon: 'fail', content: err?.response?.data?.message || '操作失败' });
@@ -302,7 +301,8 @@ export default function GamePage() {
   };
 
   const handleConfirmDeclare = async (confirmed: boolean) => {
-    if (!currentMessage) return;
+    if (!currentMessage || actionLoading) return;
+    setActionLoading('confirm');
     try {
       await confirmDeclare(playerId, {
         declareId: currentMessage.relatedId,
@@ -311,14 +311,31 @@ export default function GamePage() {
       Toast.show({ icon: 'success', content: confirmed ? '已确认' : '已否认' });
       setShowMessagePopup(false);
       setCurrentMessage(null);
-      fetchMessages();
-      fetchStatus();
+      refreshAfterAction();
     } catch (err: any) {
       Toast.show({ icon: 'fail', content: err?.response?.data?.message || '操作失败' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   if (!player) {
+    // L3 FIX: 首次轮询失败时提供重试按钮，而非永远卡在"加载中"
+    if (loadError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-gray-400 gap-4">
+          <div>加载失败，请检查网络</div>
+          <Button
+            size="small"
+            color="primary"
+            fill="outline"
+            onClick={() => { setLoadError(false); pollAll(); }}
+          >
+            重新加载
+          </Button>
+        </div>
+      );
+    }
     return <div className="flex items-center justify-center min-h-screen text-gray-400">加载中...</div>;
   }
 
@@ -326,7 +343,8 @@ export default function GamePage() {
 
   // 按难度排序：EASY → MEDIUM → HARD → EXTREME
   const difficultyOrder: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2, EXTREME: 3 };
-  const sortedTasks = [...tasks].sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
+  // Bug P FIX: 未知难度回退到 99，避免 undefined - undefined = NaN
+  const sortedTasks = [...tasks].sort((a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99));
 
   return (
     <div className="min-h-screen bg-gray-50 pb-6">
@@ -390,6 +408,7 @@ export default function GamePage() {
               size="small"
               fill="outline"
               onClick={handleRefresh}
+              loading={actionLoading === 'refresh'}
               disabled={!player || player.refreshChances <= 0}
             >
               🔄 刷新全部 ({player?.refreshChances ?? 0})
@@ -400,7 +419,7 @@ export default function GamePage() {
           <div className="flex gap-3 justify-center">
             {sortedTasks.map((task) => {
               const dc = DIFFICULTY_CONFIG[task.difficulty] || DIFFICULTY_CONFIG.EASY;
-              const isResolved = task.status === 'COMPLETED' || task.status === 'CHALLENGED';
+              const isResolved = task.status === 'COMPLETED' || task.status === 'CHALLENGED' || task.status === 'CANCELED';
               const isExpanded = expandedTaskId === task.id;
 
               return (
@@ -470,12 +489,14 @@ export default function GamePage() {
                       )}
                     </div>
 
-                    {/* ===== 背面 — 已解决卡（翻转后） ===== */}
+                    {/* ===== 背面 — 已解决卡（翻转后展示状态+惩罚） ===== */}
                     <div
                       className={`absolute inset-0 rounded-xl border-2 ${
                         task.status === 'COMPLETED'
                           ? 'border-green-400 bg-green-50'
-                          : 'border-red-400 bg-red-50'
+                          : task.status === 'CANCELED'
+                            ? 'border-gray-400 bg-gray-50'
+                            : 'border-red-400 bg-red-50'
                       } p-3 flex flex-col items-center justify-center`}
                       style={{
                         backfaceVisibility: 'hidden',
@@ -485,14 +506,19 @@ export default function GamePage() {
                       }}
                     >
                       <div className="text-2xl mb-1">
-                        {task.status === 'COMPLETED' ? '✅' : '🛡️'}
+                        {task.status === 'COMPLETED' ? '✅' : task.status === 'CANCELED' ? '❌' : '🛡️'}
                       </div>
                       <div className="text-[10px] font-bold text-gray-700 text-center leading-tight">
-                        {task.status === 'COMPLETED' ? '已完成' : '被质疑'}
+                        {task.status === 'COMPLETED' ? '已完成' : task.status === 'CANCELED' ? '未完成' : '被质疑'}
                       </div>
-                      <div className="text-[10px] text-gray-400 text-center mt-1 line-clamp-2">
-                        {task.content}
-                      </div>
+                      {task.status !== 'CANCELED' && (
+                        <div className="mt-2 w-full border-t border-dashed border-gray-300 pt-1">
+                          <div className="text-[9px] text-gray-400 text-center">⚠️ 惩罚</div>
+                          <div className="text-[10px] font-medium text-red-600 text-center leading-tight line-clamp-3">
+                            {task.punishmentContent}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -613,7 +639,7 @@ export default function GamePage() {
                 <p className="text-xs text-gray-400 mb-4">
                   声明后目标玩家将收到确认请求。若目标否认，将自动触发质疑流程。
                 </p>
-                <Button color="primary" block shape="rounded" onClick={handleDeclare}>
+                <Button color="primary" block shape="rounded" loading={actionLoading === 'declare'} onClick={handleDeclare}>
                   确认声明
                 </Button>
               </>
@@ -662,7 +688,7 @@ export default function GamePage() {
               系统将自动匹配对方手牌，相似度≥75%即判定命中
             </p>
           </div>
-          <Button color="warning" block shape="rounded" onClick={handleChallenge}>
+          <Button color="warning" block shape="rounded" loading={actionLoading === 'challenge'} onClick={handleChallenge}>
             发起质疑
           </Button>
         </div>
@@ -685,11 +711,12 @@ export default function GamePage() {
                     <h3 className="text-lg font-bold text-green-600">质疑命中！</h3>
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 mb-4">
+                    {/* T1/A1 FIX: hitTaskContent / hitPunishmentContent 可能为 null，加 null guard */}
                     <div className="text-sm text-gray-700 mb-1">
-                      <span className="font-medium">匹配任务：</span>{challengeResult.hitTaskContent}
+                      <span className="font-medium">匹配任务：</span>{challengeResult.hitTaskContent ?? '未知'}
                     </div>
                     <div className="text-xs text-gray-500">
-                      <span className="font-medium">惩罚：</span>{challengeResult.hitPunishmentContent}
+                      <span className="font-medium">惩罚：</span>{challengeResult.hitPunishmentContent ?? '未知'}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       相似度：{challengeResult.similarityScore != null ? `${Math.round(challengeResult.similarityScore * 100)}%` : '—'}
@@ -757,7 +784,7 @@ export default function GamePage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-700">声明完成确认</div>
                     <div className="text-xs text-gray-400 truncate">
-                      {(msg.content as DeclareCompleteType).declarerNickname} 声明完成任务
+                      {msg.content ? (msg.content as DeclareCompleteType).declarerNickname : '某玩家'} 声明完成任务
                     </div>
                   </div>
                   <span className="text-xs text-gray-400">
@@ -775,7 +802,7 @@ export default function GamePage() {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center">
           <div className="fixed inset-0 bg-black/50" onClick={() => setShowMessagePopup(false)} />
           <div className="relative bg-white rounded-2xl shadow-xl w-[85vw] max-w-[400px]">
-            {currentMessage && (() => {
+            {currentMessage && currentMessage.content ? (() => {
               const dc = currentMessage.content as DeclareCompleteType;
               return (
                 <div className="p-6">
@@ -789,16 +816,22 @@ export default function GamePage() {
                     否认将自动触发质疑流程，双方各获得+1刷新机会
                   </p>
                   <div className="flex gap-3">
-                    <Button color="primary" className="flex-1" onClick={() => handleConfirmDeclare(true)}>
+                    <Button color="primary" className="flex-1" loading={actionLoading === 'confirm'} onClick={() => handleConfirmDeclare(true)}>
                       ✅ 确认
                     </Button>
-                    <Button color="danger" fill="outline" className="flex-1" onClick={() => handleConfirmDeclare(false)}>
+                    <Button color="danger" fill="outline" className="flex-1" loading={actionLoading === 'confirm'} onClick={() => handleConfirmDeclare(false)}>
                       ❌ 否认
                     </Button>
                   </div>
                 </div>
               );
-            })()}
+            })() : (
+              /* L2 FIX: content 为空时显示提示而非空白弹窗 */
+              <div className="p-6 text-center text-gray-400">
+                <p>消息内容加载失败</p>
+                <Button size="small" fill="outline" className="mt-3" onClick={() => setShowMessagePopup(false)}>关闭</Button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,502 +1,202 @@
 [
   {
-    "content": "让目标主动给你讲一个笑话",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家同时跟你碰杯",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标给你表演一个才艺",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相碰杯并各说一句不同的祝福语",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标说出自己的一个秘密",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各给你夹一筷子不同的菜",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让任意玩家请你喝一杯",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家同时跟你玩剪刀石头布",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标跟你学猫叫",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相喂对方一口菜",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标当众夸你三句话",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各用方言对你说一句祝福",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标把手机交给你10秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各说出你全名并加一句评价",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标模仿你做一个动作",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家一起对视5秒不许笑",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让任意玩家跟你一起自拍",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家互相给对方夹同一个菜",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标唱一段歌给你听",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相说出对方的优点不少于3个",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标说出'我最佩服你'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家一起站起来喝一口酒/饮料",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标给你按摩肩膀5秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家都讲出跟你的首次见面",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标分享一个尴尬的经历",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各自介绍一道自己的家乡菜",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让任意玩家为你鼓掌5秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家互相给对方起一个新昵称",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标跟你对视10秒不笑",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各说出对方最让你佩服的一件事",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标说出'我错了'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相说出第一次见对方的印象",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标做10个深蹲",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各说出一个对方最让你意外的反差",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标给你发一条语音消息",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相说出对方的全名",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让任意玩家跟你碰杯并说吉祥话",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家一起哼唱一首歌",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标给你说一句土味情话",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相给对方倒一杯酒/饮料",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标主动给你夹三次菜",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家同时用非惯用手喝一口饮料",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标用方言跟你说一句话",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家和你一起拍一张照片，仅三人照片",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标在朋友圈发你的照片",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家连续问你一个问题",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让任意玩家给你讲个冷笑话",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家背靠背站立10秒不许动",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标跟你玩石头剪刀布连赢三局",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家同时说出在场另一个玩家的同一个优点",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标说出'你是我的偶像'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家说出自己的高考分数",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标做5个俯卧撑",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家各说一个关于对方的小秘密",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标跟你猜拳输一次",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家说出自己最擅长的学科",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让任意玩家给你跳一段舞",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家跟你手拉手形成一个圈",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标说出自己最大的缺点",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家跟你一起背对背",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标给你念一段绕口令",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享相册里的一张照片",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标用左手给你倒杯水",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家用方言介绍桌上的一道菜",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标学动物叫三声",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家同时蹲下",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让任意玩家跟你比谁先笑",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家相对大笑",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标说出'我投降'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享在看的一本书",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标蒙眼转三圈再坐下",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享喜欢的一部电影",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标用你的名字编一首打油诗",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享在看的一部电视剧",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标单脚站立15秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享在追的一个综艺",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让任意玩家说'我服了你了'",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家分享在追的一个明星",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标给你讲一个鬼故事",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家分享喜欢的一个歌手",
+    "taskType": "VERBAL"
   },
   {
-    "content": "让目标闭眼摸出一种水果",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "阻止目标玩家及次要玩家互相夹菜2次（未阻止成功不计数）",
+    "taskType": "REVERSE"
   },
   {
-    "content": "让目标说出'你是我爸爸'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "阻止目标玩家及次要玩家同时举杯2次（未阻止成功不计数）",
+    "taskType": "REVERSE"
   },
   {
-    "content": "让目标给你表演一段即兴小品",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "阻止目标玩家及次要玩家猜拳1次",
+    "taskType": "REVERSE"
   },
   {
-    "content": "让任意玩家为你倒酒并说祝词",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
+    "content": "阻止目标玩家及次要玩家同时夹同一盘菜2次（未阻止成功不计数）",
+    "taskType": "REVERSE"
   },
   {
-    "content": "让目标跟你深情对唱一句歌",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "阻止目标玩家及次要玩家一起站起来2次（未阻止成功不计数）",
+    "taskType": "REVERSE"
   },
   {
-    "content": "让目标给你写一句祝福语",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家和你一起完成一个三人击掌",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标原地转三圈不倒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家把头靠在另一人肩膀上超5秒",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标模仿一个明星说话",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家连续击掌3次",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让任意玩家给你比心并说爱你",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
+    "content": "让目标玩家及次要玩家猜拳",
+    "taskType": "BEHAVIOR"
   },
   {
-    "content": "让目标说出最近一件开心的事",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你做一杯特调饮料",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你一起做同一个手势拍照",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说'我甘拜下风'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家跟你一起做鬼脸",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标用一种动物形容你",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标主动给你敬酒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标闭眼走直线5步",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说出'你是我学习的榜样'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家给你表演一个才艺",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标用一段话夸你的优点",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你讲一个脑筋急转弯",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你一起喊一句口号",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标把头靠在你肩上5秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家说出自己的择偶标准",
-    "taskType": "EMOTIONAL",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标模仿婴儿说话",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说'你是全场的焦点'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你画一幅简笔画",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标站起来给大家鞠一躬",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家跟你深情对视5秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标用英文夸你",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标告诉你他的星座",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你打一次手背",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说出'你是我的神'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家为你唱生日歌",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标用肢体比划一个词让你猜",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标主动承认自己最怕什么",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你背靠背坐10秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你变一个小魔术",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家说'你是今晚的MVP'",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标模仿你走路的姿势",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你一起喊'干杯'并干掉",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说出自己最糗的一件事",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你吹一口气",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家跟你十指相扣3秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标给你念一段英文",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标捏着鼻子说话10秒",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标用你的名字说一句祝福",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你说一句真心话",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家给你一个拥抱",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标闭眼给你夹菜",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说'我自愿受罚'",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你学一段广告词",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标夸你三遍不重复",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家做你指定的动作",
-    "taskType": "BEHAVIOR",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标说出自己最想做的事",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标给你递东西时单膝跪地",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标跟你玩一局真心话大冒险",
-    "taskType": "EMOTIONAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让目标说出你的三个优点",
-    "taskType": "VERBAL",
-    "targetType": "SPECIFIC_ONE"
-  },
-  {
-    "content": "让任意玩家给你写一句话",
-    "taskType": "VERBAL",
-    "targetType": "ANYONE"
-  },
-  {
-    "content": "让目标给你表演一段广场舞",
-    "taskType": "BEHAVIOR",
-    "targetType": "SPECIFIC_ONE"
+    "content": "让目标玩家及次要玩家互相比一个爱心给对方",
+    "taskType": "BEHAVIOR"
   }
 ]

@@ -87,20 +87,42 @@ export function formatGameInfo(game: {
 
 // ============================================
 // 更新后2名状态（积分最低2人标记 isBottom2）
+// H4 FIX: 使用事务 + 批量更新，消除逐条写入的竞态和不一致
 // ============================================
 export async function updateBottom2Status(gameId: string): Promise<void> {
-  const players = await prisma.player.findMany({
-    where: { gameId },
-    orderBy: [{ score: 'asc' }, { joinedAt: 'asc' }],
-  });
+  await prisma.$transaction(async (tx) => {
+    const players = await tx.player.findMany({
+      where: { gameId },
+      orderBy: [{ score: 'asc' }, { joinedAt: 'asc' }],
+      select: { id: true, isBottom2: true },
+    });
 
-  for (let i = 0; i < players.length; i++) {
-    const isBottom2 = i < Math.min(2, players.length);
-    if (players[i].isBottom2 !== isBottom2) {
-      await prisma.player.update({
-        where: { id: players[i].id },
-        data: { isBottom2 },
+    const bottom2Count = Math.min(2, players.length);
+
+    // 需要标记为 bottom2 的（当前不是的）
+    const needBottom2True = players
+      .slice(0, bottom2Count)
+      .filter((p) => !p.isBottom2)
+      .map((p) => p.id);
+
+    // 需要取消 bottom2 的（当前是但不应是的）
+    const needBottom2False = players
+      .slice(bottom2Count)
+      .filter((p) => p.isBottom2)
+      .map((p) => p.id);
+
+    if (needBottom2True.length > 0) {
+      await tx.player.updateMany({
+        where: { id: { in: needBottom2True } },
+        data: { isBottom2: true },
       });
     }
-  }
+
+    if (needBottom2False.length > 0) {
+      await tx.player.updateMany({
+        where: { id: { in: needBottom2False } },
+        data: { isBottom2: false },
+      });
+    }
+  });
 }

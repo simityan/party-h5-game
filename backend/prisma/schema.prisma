@@ -86,6 +86,7 @@ model Player {
   pendingMessages   PendingMessage[]
 
   @@unique([gameId, openId]) // 同一游戏中OpenID唯一
+  @@index([gameId])
   @@map("players")
 }
 
@@ -114,7 +115,7 @@ model PlayerTask {
   // 绑定惩罚（同难度随机绑定的惩罚内容快照）
   punishmentContent String // 惩罚内容
 
-  // 状态 — V2: ACTIVE/COMPLETED/CHALLENGED (移除DENIED和DISCARDED)
+  // 状态 — V2: ACTIVE/COMPLETED/CHALLENGED/CANCELED (移除DENIED和DISCARDED)
   status    PlayerTaskStatus @default(ACTIVE)
   declaredAt DateTime? // 声明完成的时间（只能声明一次）
 
@@ -126,6 +127,8 @@ model PlayerTask {
   declareComplete DeclareComplete? // 声明完成记录（一条任务最多一次）
   challengeHit    Challenge[]      // 被质疑命中的记录
 
+  @@index([playerId, status])
+  @@index([gameId, status])
   @@map("player_tasks")
 }
 
@@ -176,7 +179,7 @@ model Challenge {
   // V2: 自动匹配信息
   similarityScore Float? // 相似度分数 (0-1)
   hitTaskId     String?  // 自动匹配到的任务ID（命中时）
-  hitTask       PlayerTask? @relation(fields: [hitTaskId], references: [id])
+  hitTask       PlayerTask? @relation(fields: [hitTaskId], references: [id], onDelete: SetNull)
 
   // 快照（结算回放用）
   hitTaskContent     String? // 被命中的任务内容
@@ -185,6 +188,9 @@ model Challenge {
   resolvedAt    DateTime? // V2: 创建时即设置
   createdAt     DateTime @default(now())
 
+  @@index([gameId])
+  @@index([challengerId])
+  @@index([challengedId])
   @@map("challenges")
 }
 
@@ -201,6 +207,7 @@ model GameEvent {
 
   createdAt DateTime   @default(now())
 
+  @@index([gameId])
   @@map("game_events")
 }
 
@@ -218,6 +225,7 @@ model AnonymousTip {
 
   createdAt     DateTime @default(now())
 
+  @@index([gameId, isActive])
   @@map("anonymous_tips")
 }
 
@@ -241,6 +249,8 @@ model PendingMessage {
   createdAt DateTime @default(now())
   handledAt DateTime?
 
+  @@index([playerId, isHandled])
+  @@index([gameId])
   @@map("pending_messages")
 }
 
@@ -289,6 +299,7 @@ enum PlayerTaskStatus {
   ACTIVE     // 当前手牌
   COMPLETED  // 已完成（目标确认）
   CHALLENGED // 被质疑命中 / V2否认后也归入此状态
+  CANCELED   // 游戏结束时未完成，自动取消
 }
 
 enum ConfirmStatus {

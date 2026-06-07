@@ -2,7 +2,7 @@
 export type GameStatus = 'WAITING' | 'PLAYING' | 'ENDED';
 export type TaskDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXTREME';
 // V2: 移除 TargetType，目标由难度自动分配
-export type PlayerTaskStatus = 'ACTIVE' | 'COMPLETED' | 'CHALLENGED'; // V2: 移除 DENIED/DISCARDED
+export type PlayerTaskStatus = 'ACTIVE' | 'COMPLETED' | 'CHALLENGED' | 'CANCELED'; // V2: CANCELED = 游戏结束时仍ACTIVE的任务
 export type ConfirmStatus = 'PENDING' | 'CONFIRMED' | 'DENIED';
 export type ChallengeStatus = 'HIT' | 'MISS'; // V2: 移除 PENDING，自动判定
 export type MessageType = 'DECLARE_COMPLETE'; // V2: 仅声明完成，质疑不再需要消息确认
@@ -103,7 +103,7 @@ export interface PendingMessage {
   id: string;
   type: MessageType;
   relatedId: string;
-  content: DeclareComplete; // V2: 只有 DeclareComplete 类型
+  content: DeclareComplete | null; // V2: 后端找不到关联记录时返回 null
   isRead: boolean;
   isHandled: boolean;
   createdAt: string;
@@ -118,6 +118,16 @@ export interface SettlementData {
   abilityCharts: AbilityChart[];
   teamRewards: string[];
   teamPunishments: string[];
+}
+
+// V2 合并轮询数据（单请求获取全部游戏数据）
+export interface PollData {
+  game: GameInfo | null;
+  player: PlayerInfo;
+  tasks: PlayerTask[];
+  messages: PendingMessage[];
+  feed: GameEventItem[];
+  tips: AnonymousTip[];
 }
 
 export interface RankingItem {

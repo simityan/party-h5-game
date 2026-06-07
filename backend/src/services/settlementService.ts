@@ -32,21 +32,23 @@ export async function getSettlement(gameId: string) {
   const players = game.players;
 
   // ======= 1. 排名 =======
+  // Bug I FIX: 所有并列最低分的玩家都标记 isLowest
+  const minScore = players.length > 0 ? players[players.length - 1].score : 0;
   const rankings = players.map((p, index) => ({
     playerId: p.id,
     nickname: p.nickname,
     score: p.score,
     rank: index + 1,
-    isLowest: index === players.length - 1, // 最后一名
+    isLowest: p.score === minScore, // 所有最低分玩家
     tasksCompleted: p.tasksCompleted,
     challengesSucceeded: p.challengesSucceeded,
   }));
 
   // ======= 2. 未完成任务 =======
-  // V2: ACTIVE + CHALLENGED 都算未完成（DENIED 已移除，否认→直接转CHALLENGED）
+  // V2: ACTIVE + CANCELED 算未完成；CHALLENGED 表示惩罚已执行，不算未完成
   const uncompletedTasks = players.map((p) => {
     const unfinished = p.tasks.filter(
-      (t) => t.status === 'ACTIVE' || t.status === 'CHALLENGED',
+      (t) => t.status === 'ACTIVE' || t.status === 'CANCELED',
     );
     return {
       playerId: p.id,
@@ -78,6 +80,7 @@ export async function getSettlement(gameId: string) {
       challengedNickname?: string;
       taskContent: string;
       punishmentContent: string;
+      denialTriggered?: boolean;
     },
     createdAt: new Date(event.createdAt).toISOString(),
   }));
@@ -156,11 +159,12 @@ function computeMedals(
     });
   }
 
-  // LURKER — 发起质疑最少且分数高于平均
-  const avgScore = players.reduce((sum, p) => sum + p.score, 0) / Math.max(players.length, 1);
-  const lurkerCandidates = players.filter((p) => p.score >= avgScore);
+  // LURKER — 完成任务最少但质疑成功最多（V2: 不怎么出手，但谁也别想骗你）
+  // 先找完成任务最少的玩家集合，再从中找质疑成功最多的
+  const minCompleted = Math.min(...players.map((p) => p.tasksCompleted));
+  const lurkerCandidates = players.filter((p) => p.tasksCompleted === minCompleted);
   const lurkerWinner = lurkerCandidates.length > 0
-    ? findMin(lurkerCandidates, (p) => p.challengesMade)
+    ? findMax(lurkerCandidates, (p) => p.challengesSucceeded)
     : null;
   if (lurkerWinner) {
     const info = MEDAL_INFO.LURKER;
@@ -208,18 +212,19 @@ function computeAbilityChart(
   const allEagleEye = players.map((p) => p.challengesMade > 0 ? p.challengesSucceeded / p.challengesMade : 0);
   const allDramaBone = players.map((p) => {
     const total = p.tasksCompleted + p.tasksDenied;
-    return total > 0 ? p.tasksCompleted / total : 0.5;
+    // Bug E FIX: 零活动玩家 dramaBone = 0（从没声明完成过，不是50/50）
+    return total > 0 ? p.tasksCompleted / total : 0;
   });
   const allMagnetism = players.map((p) => p.timesTargeted);
-  const allIronSkin = players.map((p) => p.challengesReceived > 0 ? 1 - p.challengesHit / p.challengesReceived : 1);
+  // Bug F FIX: 未被质疑过的玩家 ironSkin = 0.5（未经考验，而非满分1.0）
+  const allIronSkin = players.map((p) => p.challengesReceived > 0 ? 1 - p.challengesHit / p.challengesReceived : 0.5);
   const allLuck = players.map((p) => {
-    // 运气值：综合极端任务数 + 质疑成功 + 避免被命中
-    let luck = 50;
-    luck += p.extremeTasksDrawn * 8; // 拿到极端任务 = 命运的安排
-    luck += p.challengesSucceeded * 5; // 质疑成功 = 运气好
-    luck -= p.challengesHit * 10; // 被命中 = 运气差
-    luck += p.tasksCompleted * 2; // 任务完成 = 手气好
-    return luck;
+    // V2: 手气 = 手上出现过超难任务的比例
+    // totalTasksDrawn 已包含所有抽到的任务数
+    if (p.totalTasksDrawn > 0) {
+      return (p.extremeTasksDrawn / p.totalTasksDrawn) * 100;
+    }
+    return 0;
   });
 
   // 归一化到 10-100 范围
@@ -264,24 +269,4 @@ function findMax<T extends { id: string; nickname: string }>(
   }
   // 只在最大值 > 0 时颁发（避免全员0分也得勋章）
   return maxVal > 0 ? winner : null;
-}
-
-// ============================================
-// 辅助函数：找最小值对应玩家
-// ============================================
-function findMin<T extends { id: string; nickname: string }>(
-  items: T[],
-  selector: (item: T) => number,
-): T | null {
-  if (items.length === 0) return null;
-  let minVal = Infinity;
-  let winner: T | null = null;
-  for (const item of items) {
-    const val = selector(item);
-    if (val < minVal) {
-      minVal = val;
-      winner = item;
-    }
-  }
-  return winner;
 }

@@ -2,13 +2,14 @@ import prisma from '../utils/prisma';
 import { updateBottom2Status, AppError } from '../utils/helpers';
 import { distance } from 'fastest-levenshtein';
 import type { TaskDifficulty } from '../generated/prisma/enums';
+import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace';
 
 // ============================================
 // 常量
 // ============================================
 
 // 积分映射
-const POINTS_MAP: Record<string, number> = {
+const POINTS_MAP: Record<TaskDifficulty, number> = {
   EASY: 1,
   MEDIUM: 2,
   HARD: 3,
@@ -16,12 +17,23 @@ const POINTS_MAP: Record<string, number> = {
 };
 
 // V2 难度对应次要目标数量（-1 = 全员次要目标）
-const SECONDARY_TARGET_COUNT: Record<string, number> = {
+// HARD: 少于5人时按实际人数调整：Math.min(3, totalPlayers - 2)
+const SECONDARY_TARGET_COUNT: Record<TaskDifficulty, number> = {
   EASY: 0,
   MEDIUM: 1,
-  HARD: 3,
+  HARD: -2, // 特殊标记：动态计算
   EXTREME: -1,
 };
+
+// Fisher-Yates 洗牌（无偏随机）
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // 文本相似度阈值
 const SIMILARITY_THRESHOLD = 0.75;
@@ -30,17 +42,62 @@ const SIMILARITY_THRESHOLD = 0.75;
 const SHORT_TEXT_MAX_LENGTH = 5;
 const SHORT_TEXT_MAX_DISTANCE = 1;
 
-// 模板前缀列表（最长优先，用于去除任务内容中的模板词）
+// 模板前缀列表（V2定稿，最长优先，用于去除任务内容中的模板词）
 const TEMPLATE_PREFIXES = [
-  '让目标玩家及所有次要目标',
-  '让目标玩家及次要目标',
-  '让目标玩家及',
+  '让目标玩家及次要玩家们',
+  '让目标玩家及次要玩家',
   '让目标玩家',
-  '让次要目标',
-  '对目标玩家',
-  '在目标玩家',
-  '让所有人',
+  '让所有玩家分别',
+  '让所有玩家',
+  '阻止目标玩家及次要玩家们',
+  '阻止目标玩家及次要玩家',
+  '阻止目标玩家',
 ];
+
+// ============================================
+// V2 匿名爆料模糊化生成
+// ============================================
+
+/** 根据任务内容和难度生成模糊化的匿名爆料文案 */
+function generateFuzzyTip(taskContent: string, difficulty: TaskDifficulty): string {
+  // 去除模板前缀，提取核心动作
+  const core = stripTemplatePrefix(taskContent);
+
+  // 按难度生成不同风格的模糊提示
+  const templates: Record<string, string[]> = {
+    EASY: [
+      '💡 有人在偷偷想办法让你做一件事……',
+      '💡 有人正在打你的主意，小心哦~',
+      '💡 刚才那个互动，可能没你想的那么自然……',
+      '💡 有人想让别人配合一个小动作……',
+    ],
+    MEDIUM: [
+      '💡 有人正在策划让你和另一个人一起做某件事……',
+      '💡 有两个人的互动可能是一场设计好的局……',
+      '💡 有人想让两个人同时做某件事，小心被安排~',
+      '💡 有人正在策划一个小圈子的行动……',
+    ],
+    HARD: [
+      '💡 有人想让好几个人一起做同一件事，场面有点大……',
+      '💡 有人正在策划一个需要多人配合的局，注意观察~',
+      '💡 有人拿到了一个涉及多人的任务，留意身边人的举动……',
+      '💡 有人正在试图让一群人做某件事……',
+    ],
+    EXTREME: [
+      '💡 有人拿到了一个值5分的危险任务……',
+      '💡 有人手上的任务极其离谱，全员注意！',
+      '💡 有人正在策划一个涉及所有人的大行动……',
+      '💡 有人拿到了超难任务，所有人都是目标……',
+    ],
+  };
+
+  // 基于核心内容关键词做轻微定制
+  const pool = templates[difficulty] || templates.EASY;
+
+  // 使用核心内容长度做简单的确定性选择（避免随机导致不同步）
+  const index = core.length % pool.length;
+  return pool[index];
+}
 
 // ============================================
 // 文本相似度工具函数
@@ -54,23 +111,6 @@ function stripTemplatePrefix(text: string): string {
     }
   }
   return text.trim();
-}
-
-/** 计算两个文本的相似度（Levenshtein 距离 + 归一化） */
-function calculateSimilarity(
-  text1: string,
-  text2: string,
-): { similarity: number; editDistance: number } {
-  const clean1 = stripTemplatePrefix(text1);
-  const clean2 = stripTemplatePrefix(text2);
-
-  const editDist = distance(clean1, clean2);
-  const maxLen = Math.max(clean1.length, clean2.length);
-
-  if (maxLen === 0) return { similarity: 1, editDistance: 0 };
-
-  const similarity = 1 - editDist / maxLen;
-  return { similarity, editDistance: editDist };
 }
 
 /** 判断猜测是否命中任务（V2 自动匹配） */
@@ -125,9 +165,16 @@ function assignTargets(
   if (secondaryCount === -1) {
     // Extreme: 全员次要目标
     secondaryTargets = [...remainingPlayers];
+  } else if (secondaryCount === -2) {
+    // HARD: 动态计算 — Math.min(3, totalPlayers - 2)
+    // totalPlayers = 主目标 + 次要候选 + 自己(不参与) = otherPlayers.length + 1
+    const totalPlayers = otherPlayers.length + 1;
+    const dynamicCount = Math.min(3, totalPlayers - 2);
+    const shuffled = fisherYatesShuffle(remainingPlayers);
+    secondaryTargets = shuffled.slice(0, Math.min(dynamicCount, remainingPlayers.length));
   } else if (secondaryCount > 0) {
-    // Medium/Hard: 随机选择指定数量
-    const shuffled = [...remainingPlayers].sort(() => Math.random() - 0.5);
+    // Medium: 随机选择指定数量
+    const shuffled = fisherYatesShuffle(remainingPlayers);
     secondaryTargets = shuffled.slice(0, Math.min(secondaryCount, remainingPlayers.length));
   }
 
@@ -135,40 +182,8 @@ function assignTargets(
 }
 
 // ============================================
-// 为单个任务绑定惩罚（从惩罚库随机抽取同难度）
-// ============================================
-async function bindPunishment(difficulty: TaskDifficulty): Promise<string> {
-  const punishmentCount = await prisma.punishmentLibrary.count({
-    where: { difficulty },
-  });
-
-  if (punishmentCount === 0) return '做10个深蹲';
-
-  const pSkip = Math.floor(Math.random() * punishmentCount);
-  const punishment = await prisma.punishmentLibrary.findFirst({
-    where: { difficulty },
-    skip: pSkip,
-  });
-  return punishment?.content ?? '做10个深蹲';
-}
-
-// ============================================
-// 获取本局已使用的任务内容集合（V2 共享卡池）
-// 已完成 + 已被质疑的 不再出现
-// ============================================
-async function getUsedContentSet(gameId: string): Promise<Set<string>> {
-  const existingTasks = await prisma.playerTask.findMany({
-    where: {
-      gameId,
-      status: { in: ['COMPLETED', 'CHALLENGED'] },
-    },
-    select: { content: true },
-  });
-  return new Set(existingTasks.map((t) => t.content));
-}
-
-// ============================================
 // 为玩家抽取3个任务（V2: 共享卡池 + 难度决定目标）
+// 使用事务确保原子性：要么全部创建成功，要么全部回滚
 // ============================================
 export async function drawTasksForPlayer(
   playerId: string,
@@ -179,107 +194,125 @@ export async function drawTasksForPlayer(
   const otherPlayers = allPlayers.filter((p) => p.id !== playerId);
   let extremeCount = 0;
 
-  // V2: 共享卡池 — 已完成或被质疑的任务不再出现
-  const usedContentSet = await getUsedContentSet(gameId);
+  await prisma.$transaction(async (tx) => {
+    // V2: 共享卡池 — 已完成或被质疑的任务不再出现
+    const existingTasks = await tx.playerTask.findMany({
+      where: { gameId, status: { in: ['COMPLETED', 'CHALLENGED'] } },
+      select: { content: true },
+    });
+    const usedContentSet = new Set(existingTasks.map((t) => t.content));
 
-  for (const difficulty of difficulties) {
-    // HARD 难度有 20% 概率变成 EXTREME
-    let actualDifficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXTREME' = difficulty;
-    if (difficulty === 'HARD' && Math.random() < 0.2) {
-      actualDifficulty = 'EXTREME';
-      extremeCount++;
-    }
+    for (const difficulty of difficulties) {
+      // HARD 难度有 20% 概率变成 EXTREME
+      let actualDifficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXTREME' = difficulty;
+      if (difficulty === 'HARD' && Math.random() < 0.2) {
+        actualDifficulty = 'EXTREME';
+        extremeCount++;
+      }
 
-    // V2: 排除已使用的内容
-    const usedContentArray = [...usedContentSet];
-    const whereClause = usedContentArray.length > 0
-      ? { difficulty: actualDifficulty, content: { notIn: usedContentArray } }
-      : { difficulty: actualDifficulty };
+      // V2: 排除已使用的内容
+      const usedContentArray = [...usedContentSet];
+      const whereClause = usedContentArray.length > 0
+        ? { difficulty: actualDifficulty, content: { notIn: usedContentArray } }
+        : { difficulty: actualDifficulty };
 
-    const taskCount = await prisma.taskLibrary.count({ where: whereClause });
+      const taskCount = await tx.taskLibrary.count({ where: whereClause });
 
-    let task;
-    if (taskCount === 0) {
-      // 排除后无可用任务，回退到全量（避免卡死）
-      const fallbackCount = await prisma.taskLibrary.count({
+      let task;
+      if (taskCount === 0) {
+        // 排除后无可用任务，回退到全量（避免卡死）
+        const fallbackCount = await tx.taskLibrary.count({
+          where: { difficulty: actualDifficulty },
+        });
+        if (fallbackCount === 0) continue;
+        const skip = Math.floor(Math.random() * fallbackCount);
+        task = await tx.taskLibrary.findFirst({
+          where: { difficulty: actualDifficulty },
+          skip,
+        });
+      } else {
+        const skip = Math.floor(Math.random() * taskCount);
+        task = await tx.taskLibrary.findFirst({ where: whereClause, skip });
+      }
+
+      if (!task) continue;
+
+      // 加入已使用集合，防止后续玩家抽到同一任务
+      usedContentSet.add(task.content);
+
+      // 绑定惩罚（从惩罚库随机抽取同难度）
+      const punishmentCount = await tx.punishmentLibrary.count({
         where: { difficulty: actualDifficulty },
       });
-      if (fallbackCount === 0) continue;
-      const skip = Math.floor(Math.random() * fallbackCount);
-      task = await prisma.taskLibrary.findFirst({
-        where: { difficulty: actualDifficulty },
-        skip,
+      let punishmentContent = '做10个深蹲';
+      if (punishmentCount > 0) {
+        const pSkip = Math.floor(Math.random() * punishmentCount);
+        const punishment = await tx.punishmentLibrary.findFirst({
+          where: { difficulty: actualDifficulty },
+          skip: pSkip,
+        });
+        if (punishment) punishmentContent = punishment.content;
+      }
+
+      // V2: 按难度分配目标
+      const { primaryTarget, secondaryTargets } = assignTargets(actualDifficulty, otherPlayers);
+
+      // 创建玩家手牌
+      const playerTask = await tx.playerTask.create({
+        data: {
+          playerId,
+          gameId,
+          content: task.content,
+          difficulty: actualDifficulty,
+          points: POINTS_MAP[actualDifficulty],
+          taskType: task.taskType,
+          primaryTargetId: primaryTarget.id,
+          primaryTargetName: primaryTarget.nickname,
+          secondaryTargetIds: secondaryTargets.map((t) => t.id),
+          secondaryTargetNames: secondaryTargets.map((t) => t.nickname),
+          punishmentContent,
+        },
       });
-    } else {
-      const skip = Math.floor(Math.random() * taskCount);
-      task = await prisma.taskLibrary.findFirst({ where: whereClause, skip });
+
+      // V2: 创建匿名爆料（模糊化处理，不暴露任务原文）
+      await tx.anonymousTip.create({
+        data: {
+          gameId,
+          content: generateFuzzyTip(task.content, actualDifficulty),
+          sourceTaskId: playerTask.id,
+          isActive: true,
+        },
+      });
     }
 
-    if (!task) continue;
-
-    // 加入已使用集合，防止后续玩家抽到同一任务
-    usedContentSet.add(task.content);
-
-    // 绑定惩罚
-    const punishmentContent = await bindPunishment(actualDifficulty);
-
-    // V2: 按难度分配目标
-    const { primaryTarget, secondaryTargets } = assignTargets(actualDifficulty, otherPlayers);
-
-    // 创建玩家手牌
-    const playerTask = await prisma.playerTask.create({
+    // 更新玩家统计
+    const tasksDrawn = await tx.playerTask.count({
+      where: { playerId, gameId },
+    });
+    await tx.player.update({
+      where: { id: playerId },
       data: {
-        playerId,
-        gameId,
-        content: task.content,
-        difficulty: actualDifficulty,
-        points: POINTS_MAP[actualDifficulty],
-        taskType: task.taskType,
-        primaryTargetId: primaryTarget.id,
-        primaryTargetName: primaryTarget.nickname,
-        secondaryTargetIds: secondaryTargets.map((t) => t.id),
-        secondaryTargetNames: secondaryTargets.map((t) => t.nickname),
-        punishmentContent,
+        totalTasksDrawn: tasksDrawn,
+        extremeTasksDrawn: { increment: extremeCount },
       },
     });
-
-    // 创建匿名爆料
-    await prisma.anonymousTip.create({
-      data: {
-        gameId,
-        content: `🔍 有人正在策划：「${task.content}」`,
-        sourceTaskId: playerTask.id,
-        isActive: true,
-      },
-    });
-  }
-
-  // 更新玩家统计
-  const tasksDrawn = await prisma.playerTask.count({
-    where: { playerId, gameId },
-  });
-  await prisma.player.update({
-    where: { id: playerId },
-    data: {
-      totalTasksDrawn: tasksDrawn,
-      extremeTasksDrawn: extremeCount,
-    },
   });
 }
 
 // ============================================
 // 声明完成（V2: targetId 来自任务的 primaryTargetId）
+// H3 FIX: 3个写操作（create declare + update task + create message）放入同一事务
 // ============================================
 export async function declareComplete(
   playerId: string,
   data: { taskId: string },
 ) {
+  // 前置校验（快速失败，非关键路径）
   const player = await prisma.player.findUnique({
     where: { id: playerId },
   });
   if (!player) throw new AppError(404, '玩家不存在');
 
-  // 检查游戏状态
   const game = await prisma.game.findUnique({
     where: { id: player.gameId },
   });
@@ -287,19 +320,12 @@ export async function declareComplete(
     throw new AppError(400, '游戏不在进行中');
   }
 
-  // 检查任务归属和状态
   const task = await prisma.playerTask.findUnique({
     where: { id: data.taskId },
   });
   if (!task) throw new AppError(404, '任务不存在');
   if (task.playerId !== playerId) throw new AppError(403, '这不是你的任务');
   if (task.status !== 'ACTIVE') throw new AppError(400, '该任务已无法声明完成');
-
-  // 检查是否已声明（一条任务只能声明一次）
-  const existingDeclare = await prisma.declareComplete.findUnique({
-    where: { taskId: data.taskId },
-  });
-  if (existingDeclare) throw new AppError(400, '该任务已声明完成，不能重复声明');
 
   // V2: targetId 来自任务的 primaryTargetId（不再由用户选择）
   const targetId = task.primaryTargetId;
@@ -317,41 +343,62 @@ export async function declareComplete(
     throw new AppError(400, '目标玩家不在同一游戏中');
   }
 
-  // 创建声明完成记录
-  const declare = await prisma.declareComplete.create({
-    data: {
-      gameId: player.gameId,
-      taskId: data.taskId,
-      declarerId: playerId,
-      targetId,
-      taskContent: task.content,
-      punishmentContent: task.punishmentContent,
-      status: 'PENDING',
-    },
-    include: { declarer: true, target: true },
-  });
+  // 事务内：创建声明 + 更新任务 + 发送消息（原子操作，防止部分写入）
+  let declare;
+  try {
+    declare = await prisma.$transaction(async (tx) => {
+      // 事务内重新校验任务状态（防止并发操作）
+      const currentTask = await tx.playerTask.findUnique({
+        where: { id: data.taskId },
+      });
+      if (!currentTask || currentTask.status !== 'ACTIVE') {
+        throw new AppError(400, '该任务已无法声明完成');
+      }
 
-  // 更新任务声明时间
-  await prisma.playerTask.update({
-    where: { id: data.taskId },
-    data: { declaredAt: new Date() },
-  });
+      const created = await tx.declareComplete.create({
+        data: {
+          gameId: player.gameId,
+          taskId: data.taskId,
+          declarerId: playerId,
+          targetId,
+          taskContent: task.content,
+          punishmentContent: task.punishmentContent,
+          status: 'PENDING',
+        },
+        include: { declarer: true, target: true },
+      });
 
-  // 给目标方发送待处理消息
-  await prisma.pendingMessage.create({
-    data: {
-      playerId: targetId,
-      gameId: player.gameId,
-      type: 'DECLARE_COMPLETE',
-      relatedId: declare.id,
-      content: {
-        declarerNickname: declare.declarer.nickname,
-        targetNickname: declare.target.nickname,
-        taskContent: declare.taskContent,
-        punishmentContent: declare.punishmentContent,
-      },
-    },
-  });
+      // 更新任务声明时间
+      await tx.playerTask.update({
+        where: { id: data.taskId },
+        data: { declaredAt: new Date() },
+      });
+
+      // 给目标方发送待处理消息
+      await tx.pendingMessage.create({
+        data: {
+          playerId: targetId,
+          gameId: player.gameId,
+          type: 'DECLARE_COMPLETE',
+          relatedId: created.id,
+          content: {
+            declarerNickname: created.declarer.nickname,
+            targetNickname: created.target.nickname,
+            taskContent: created.taskContent,
+            punishmentContent: created.punishmentContent,
+          },
+        },
+      });
+
+      return created;
+    });
+  } catch (err) {
+    // P2002: taskId 唯一约束冲突（并发重复声明）
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new AppError(400, '该任务已被声明完成，请勿重复操作');
+    }
+    throw err;
+  }
 
   return {
     id: declare.id,
@@ -442,10 +489,18 @@ export async function confirmDeclare(
         where: { relatedId: data.declareId, type: 'DECLARE_COMPLETE' },
         data: { isHandled: true, handledAt: new Date() },
       });
-    });
 
-    // V2: 检查声明方是否所有任务都已 resolve → 是则 +3 刷新次数
-    await checkAndAwardRefreshOnAllResolved(declare.declarerId, declare.gameId);
+      // M8 FIX: 事务内检查声明方是否所有任务都已 resolve → 是则 +3 刷新次数
+      const activeCount = await tx.playerTask.count({
+        where: { playerId: declare.declarerId, gameId: declare.gameId, status: 'ACTIVE' },
+      });
+      if (activeCount === 0) {
+        await tx.player.update({
+          where: { id: declare.declarerId },
+          data: { refreshChances: { increment: 3 } },
+        });
+      }
+    });
 
     await updateBottom2Status(declare.gameId);
   } else {
@@ -511,10 +566,18 @@ export async function confirmDeclare(
         where: { relatedId: data.declareId, type: 'DECLARE_COMPLETE' },
         data: { isHandled: true, handledAt: new Date() },
       });
-    });
 
-    // V2: 检查声明方是否所有任务都已 resolve
-    await checkAndAwardRefreshOnAllResolved(declare.declarerId, declare.gameId);
+      // M8 FIX: 事务内检查声明方是否所有任务都已 resolve → 是则 +3 刷新次数
+      const activeCount = await tx.playerTask.count({
+        where: { playerId: declare.declarerId, gameId: declare.gameId, status: 'ACTIVE' },
+      });
+      if (activeCount === 0) {
+        await tx.player.update({
+          where: { id: declare.declarerId },
+          data: { refreshChances: { increment: 3 } },
+        });
+      }
+    });
 
     await updateBottom2Status(declare.gameId);
   }
@@ -522,20 +585,8 @@ export async function confirmDeclare(
   return { success: true };
 }
 
-// ============================================
-// V2: 检查玩家是否所有任务都已 resolve → 是则 +3 刷新次数
-// ============================================
-async function checkAndAwardRefreshOnAllResolved(playerId: string, gameId: string) {
-  const activeCount = await prisma.playerTask.count({
-    where: { playerId, gameId, status: 'ACTIVE' },
-  });
-  if (activeCount === 0) {
-    await prisma.player.update({
-      where: { id: playerId },
-      data: { refreshChances: { increment: 3 } },
-    });
-  }
-}
+// M8 FIX: checkAndAwardRefreshOnAllResolved 已内联到各父事务中
+// （独立调用存在 TOCTOU 竞态：并发确认可导致 +6 而非 +3）
 
 // ============================================
 // 发起质疑（V2: 自动匹配，立即返回结果）
@@ -600,6 +651,43 @@ export async function challenge(
 
   // 创建质疑记录（V2: 创建时即确定结果，不再需要手动确认）
   const challengeRecord = await prisma.$transaction(async (tx) => {
+    // SEVERE #2 FIX: 并发控制 — 在事务内重新检查命中任务状态
+    // 防止同一任务被多个质疑同时命中
+    if (isHitResult && bestMatch) {
+      const currentTask = await tx.playerTask.findUnique({
+        where: { id: bestMatch.task.id },
+      });
+      if (!currentTask || currentTask.status !== 'ACTIVE') {
+        // 任务已被其他质疑先命中，本次质疑自动失败
+        const record = await tx.challenge.create({
+          data: {
+            gameId: player.gameId,
+            challengerId: playerId,
+            challengedId: data.challengedId,
+            guessContent: data.guessContent,
+            status: 'MISS',
+            similarityScore: bestMatch.similarity,
+            hitTaskId: null,
+            hitTaskContent: null,
+            hitPunishmentContent: null,
+            resolvedAt: new Date(),
+          },
+          include: { challenger: true, challenged: true },
+        });
+
+        await tx.player.update({
+          where: { id: playerId },
+          data: { challengesMade: { increment: 1 } },
+        });
+
+        await tx.player.update({
+          where: { id: data.challengedId },
+          data: { challengesReceived: { increment: 1 } },
+        });
+
+        return record;
+      }
+    }
     const record = await tx.challenge.create({
       data: {
         gameId: player.gameId,
@@ -646,12 +734,13 @@ export async function challenge(
         },
       });
 
-      // 被质疑方统计
+      // 被质疑方统计 + 刷新（V2: 质疑命中→双方各+1刷新）
       await tx.player.update({
         where: { id: data.challengedId },
         data: {
           challengesHit: { increment: 1 },
           punishmentsReceived: { increment: 1 },
+          refreshChances: { increment: 1 },
         },
       });
 
@@ -674,6 +763,17 @@ export async function challenge(
         where: { sourceTaskId: bestMatch.task.id },
         data: { isActive: false },
       });
+
+      // M8 FIX: 事务内检查被质疑方是否所有任务都已 resolve → 是则 +3 刷新次数
+      const activeCount = await tx.playerTask.count({
+        where: { playerId: data.challengedId, gameId: player.gameId, status: 'ACTIVE' },
+      });
+      if (activeCount === 0) {
+        await tx.player.update({
+          where: { id: data.challengedId },
+          data: { refreshChances: { increment: 3 } },
+        });
+      }
     }
     // V2: 质疑不再发送待处理消息（自动判定，无 PENDING 状态）
 
@@ -682,11 +782,6 @@ export async function challenge(
 
   // 更新后2名状态
   await updateBottom2Status(player.gameId);
-
-  // V2: 命中时检查被质疑方是否所有任务都已 resolve
-  if (isHitResult) {
-    await checkAndAwardRefreshOnAllResolved(data.challengedId, player.gameId);
-  }
 
   return {
     id: challengeRecord.id,
@@ -705,18 +800,16 @@ export async function challenge(
 
 // ============================================
 // V2: 批量刷新（消耗1次刷新机会，替换所有 ACTIVE 任务）
+// H2 FIX: 刷新次数扣减移入事务，使用条件更新（updateMany + gt:0）防止并发超扣
+// M7 FIX: activeTasks 读取移入事务，使用 deleteMany 批量删除替代逐条删除
 // ============================================
 export async function refreshAllTasks(playerId: string) {
+  // 前置校验（快速失败，非关键路径）
   const player = await prisma.player.findUnique({
     where: { id: playerId },
   });
   if (!player) throw new AppError(404, '玩家不存在');
 
-  if (player.refreshChances <= 0) {
-    throw new AppError(400, '刷新次数已用完');
-  }
-
-  // 检查游戏状态
   const game = await prisma.game.findUnique({
     where: { id: player.gameId },
   });
@@ -735,34 +828,40 @@ export async function refreshAllTasks(playerId: string) {
     throw new AppError(400, '有待确认的声明完成，请等待后再刷新');
   }
 
-  // 获取当前 ACTIVE 任务
-  const activeTasks = await prisma.playerTask.findMany({
-    where: { playerId, gameId: player.gameId, status: 'ACTIVE' },
-  });
-
-  // 获取同游戏所有玩家
+  // 获取同游戏所有玩家（事务外读取，此数据不因刷新而改变）
   const allPlayers = await prisma.player.findMany({
     where: { gameId: player.gameId },
     select: { id: true, nickname: true },
   });
 
-  // 使用事务：删除旧牌 + 扣减刷新次数 + 抽新牌
+  // 事务：原子扣减 + 删除旧牌 + 抽新牌
   await prisma.$transaction(async (tx) => {
-    // 扣减刷新次数
-    await tx.player.update({
-      where: { id: playerId },
+    // H2 FIX: 原子条件扣减刷新次数（单条 SQL，防止并发超扣）
+    const decrementResult = await tx.player.updateMany({
+      where: { id: playerId, refreshChances: { gt: 0 } },
       data: { refreshChances: { decrement: 1 } },
     });
+    if (decrementResult.count === 0) {
+      throw new AppError(400, '刷新次数已用完');
+    }
 
-    // 删除旧的 ACTIVE 任务（刷新 = 替换，不计入任何完成/质疑状态）
-    for (const task of activeTasks) {
-      // 失活对应的匿名爆料
+    // M7 FIX: 事务内读取 ACTIVE 任务，消除 TOCTOU 竞态
+    const activeTasks = await tx.playerTask.findMany({
+      where: { playerId, gameId: player.gameId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (activeTasks.length > 0) {
+      const taskIds = activeTasks.map((t) => t.id);
+      // 批量失活匿名爆料
       await tx.anonymousTip.updateMany({
-        where: { sourceTaskId: task.id },
+        where: { sourceTaskId: { in: taskIds } },
         data: { isActive: false },
       });
-      // 删除任务记录（ACTIVE 且无 DeclareComplete 关联，安全删除）
-      await tx.playerTask.delete({ where: { id: task.id } });
+      // M7 FIX: 批量删除旧任务（替代逐条删除，减少 DB 往返）
+      await tx.playerTask.deleteMany({
+        where: { id: { in: taskIds } },
+      });
     }
 
     // 抽新任务（使用 V2 共享卡池逻辑）
@@ -770,7 +869,7 @@ export async function refreshAllTasks(playerId: string) {
     const otherPlayers = allPlayers.filter((p) => p.id !== playerId);
     let extremeCount = 0;
 
-    // 获取本局已使用的任务内容
+    // M9: V2 共享卡池仅排除 COMPLETED/CHALLENGED，允许不同玩家持有相同内容的 ACTIVE 任务（设计如此）
     const existingTasks = await tx.playerTask.findMany({
       where: {
         gameId: player.gameId,
@@ -849,11 +948,11 @@ export async function refreshAllTasks(playerId: string) {
         },
       });
 
-      // 创建匿名爆料
+      // V2: 创建匿名爆料
       await tx.anonymousTip.create({
         data: {
           gameId: player.gameId,
-          content: `🔍 有人换了新牌，正在策划：「${task.content}」`,
+          content: generateFuzzyTip(task.content, actualDifficulty),
           sourceTaskId: newTask.id,
           isActive: true,
         },
@@ -878,7 +977,7 @@ export async function refreshAllTasks(playerId: string) {
   });
 
   return {
-    refreshChances: updatedPlayer!.refreshChances,
+    refreshChances: updatedPlayer ? updatedPlayer.refreshChances : player.refreshChances - 1,
     tasks: newTasks.map((t) => ({
       id: t.id,
       content: t.content,
@@ -891,6 +990,7 @@ export async function refreshAllTasks(playerId: string) {
       secondaryTargetNames: t.secondaryTargetNames as string[],
       punishmentContent: t.punishmentContent,
       status: t.status,
+      declaredAt: t.declaredAt ? new Date(t.declaredAt).toISOString() : null,
     })),
   };
 }
